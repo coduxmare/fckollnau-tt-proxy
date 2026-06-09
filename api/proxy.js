@@ -4,18 +4,47 @@
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info, x-action");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  // ── Spezieller Login-Endpunkt ──────────────────
+  // POST /api/proxy?action=login  mit body {email, password}
+  if (req.query.action === "login") {
+    try {
+      const { email, password } = typeof req.body === "string"
+        ? JSON.parse(req.body)
+        : req.body;
+
+      const SUPA_URL = "https://supabase.mytischtennis.de";
+      const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzYiIsInJvbGUiOiJhbm9uIiwiZXhwIjo5OTk5OTk5OTk5fQ.uuv5nJLBPFYbi2gSnxzPZ1jOPwV9rDZKTKBQDFAhXnE";
+
+      const resp = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "apikey": SUPA_KEY,
+          "Authorization": `Bearer ${SUPA_KEY}`,
+          "Origin": "https://www.mytischtennis.de",
+          "Referer": "https://www.mytischtennis.de/",
+          "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      return res.status(resp.status).json(data);
+
+    } catch (err) {
+      return res.status(500).json({ error: "Login-Fehler", message: err.message });
+    }
   }
 
+  // ── Allgemeiner Proxy ──────────────────────────
   const target = req.query.url;
-  if (!target) {
-    return res.status(400).json({ error: "Kein url Parameter angegeben" });
-  }
+  if (!target) return res.status(400).json({ error: "Kein url Parameter" });
 
-  // Erlaubte Domains
   const allowed = [
     "https://www.mytischtennis.de/",
     "https://supabase.mytischtennis.de/",
@@ -28,14 +57,14 @@ export default async function handler(req, res) {
     const forwardHeaders = {
       "Content-Type": req.headers["content-type"] || "application/json",
       "Accept": req.headers["accept"] || "application/json, text/html, */*",
-      "User-Agent": "Mozilla/5.0 (Android 14; Mobile) AppleWebKit/537.36",
+      "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36",
+      "Origin": "https://www.mytischtennis.de",
+      "Referer": "https://www.mytischtennis.de/",
     };
 
-    // Supabase-spezifische Header weiterleiten
     if (req.headers["apikey"]) forwardHeaders["apikey"] = req.headers["apikey"];
     if (req.headers["authorization"]) forwardHeaders["Authorization"] = req.headers["authorization"];
     if (req.headers["cookie"]) forwardHeaders["Cookie"] = req.headers["cookie"];
-    if (req.headers["x-client-info"]) forwardHeaders["x-client-info"] = req.headers["x-client-info"];
 
     let body = undefined;
     if (req.method === "POST") {
@@ -49,7 +78,6 @@ export default async function handler(req, res) {
       redirect: "follow",
     });
 
-    // Alle relevanten Response-Header weitergeben
     const setCookie = response.headers.get("set-cookie");
     if (setCookie) {
       res.setHeader("Set-Cookie", setCookie);
@@ -57,7 +85,6 @@ export default async function handler(req, res) {
     }
 
     const contentType = response.headers.get("content-type") || "";
-
     if (contentType.includes("application/json")) {
       const data = await response.json();
       return res.status(response.status).json(data);
@@ -68,7 +95,6 @@ export default async function handler(req, res) {
     }
 
   } catch (err) {
-    console.error("Proxy error:", err);
     return res.status(502).json({ error: "Proxy-Fehler", message: err.message });
   }
 }
