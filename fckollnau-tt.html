@@ -151,7 +151,7 @@ html,body{background:var(--bg);color:var(--tx);font-family:-apple-system,'Segoe 
       <p>Bitte mit myTischtennis-Account anmelden</p>
     </div>
     <div class="login-field">
-      <label>Benutzername / E-Mail</label>
+      <label>E-Mail-Adresse</label>
       <input type="text" id="liUser" placeholder="dein@email.de" autocomplete="username" autocapitalize="off"/>
     </div>
     <div class="login-field">
@@ -160,7 +160,7 @@ html,body{background:var(--bg);color:var(--tx);font-family:-apple-system,'Segoe 
     </div>
     <button class="login-btn" id="liBtn" onclick="doLogin()">Anmelden & App starten</button>
     <div id="liErr" style="display:none" class="login-err"></div>
-    <p class="login-note">Deine Zugangsdaten werden ausschließlich<br>lokal auf deinem Gerät gespeichert.<br>Kein Server, keine Weitergabe.</p>
+    <p class="login-note">Login mit deiner myTischtennis.de E-Mail-Adresse<br>und deinem Passwort. Zugangsdaten werden<br>nur lokal auf deinem Gerät gespeichert.</p>
   </div>
 </div>
 
@@ -182,14 +182,18 @@ const CFG = {
 
 const BASE = "https://www.mytischtennis.de";
 
+// ── SUPABASE AUTH KONFIGURATION ───────────────
+const SUPA_URL = "https://supabase.mytischtennis.de";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzYiIsInJvbGUiOiJhbm9uIiwiZXhwIjo5OTk5OTk5OTk5fQ.uuv5nJLBPFYbi2gSnxzPZ1jOPwV9rDZKTKBQDFAhXnE";
+
 // ── PROXY KONFIGURATION ──────────────────────
 // Trage hier deine Vercel-URL ein nach dem Deploy, z.B.:
 // const PROXY = "https://fckollnau-tt-proxy.vercel.app";
-const PROXY = "https://fckollnau-tt-proxy.vercel.app";
+const PROXY = "https://fckollnau-tt-proxy.vercel.app/";
 
 // Alle API-Calls laufen über den Proxy
 function proxyUrl(url) {
-  if (PROXY === "https://fckollnau-tt-proxy.vercel.app") return url; // Fallback: direkt (schlägt wegen CORS fehl)
+  if (PROXY === "https://fckollnau-tt-proxy.vercel.app/") return url; // Fallback: direkt (schlägt wegen CORS fehl)
   return `${PROXY}/api/proxy?url=${encodeURIComponent(url)}`;
 }
 
@@ -313,41 +317,30 @@ async function doLogin(){
   btn.disabled=true;btn.textContent="Anmelden…";
   err.style.display="none";
   try{
-    // myTischtennis Login endpoint
-    const resp=await fetch(proxyUrl(`${BASE}/api/auth/login`),{
+    // Supabase Login (Email + Password)
+    const loginUrl = `${SUPA_URL}/auth/v1/token?grant_type=password`;
+    const resp=await fetch(proxyUrl(loginUrl),{
       method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"},
-      body:new URLSearchParams({username:u,password:p}),
-      
+      headers:{
+        "Content-Type":"application/json",
+        "Accept":"application/json",
+        "apikey": SUPA_KEY,
+      },
+      body:JSON.stringify({email:u,password:p}),
     });
     const data=await resp.json().catch(()=>({}));
-    // Check for auth token in response or cookies
-    let token=data?.token||data?.access_token||data?.sb_10_auth_token||data?.authToken||null;
-    // Try reading cookie as fallback
-    if(!token){
-      const ck=document.cookie.split(";").find(c=>c.trim().startsWith("sb-10-auth-token="));
-      if(ck) token=ck.split("=")[1];
-    }
+    const token=data?.access_token||null;
     if(resp.ok&&token){
       S.authToken=token;S.loggedIn=true;S.playerName=u;
       saveAuth(token,u);
       document.getElementById("loginWrap").style.display="none";
       await loadAllData();
-    } else if(resp.ok&&!data?.error){
-      // Login succeeded but no explicit token — use session cookie
-      S.authToken="session";S.loggedIn=true;S.playerName=u;
-      saveAuth("session",u);
-      document.getElementById("loginWrap").style.display="none";
-      await loadAllData();
     } else {
-      showErr(data?.message||data?.error||"Login fehlgeschlagen. Bitte Zugangsdaten prüfen.");
+      const msg=data?.error_description||data?.message||data?.error||"Login fehlgeschlagen. Bitte E-Mail und Passwort prüfen.";
+      showErr(msg);
     }
   }catch(e){
-    // CORS expected — session cookie may still be set
-    S.authToken="session";S.loggedIn=true;S.playerName=u;
-    saveAuth("session",u);
-    document.getElementById("loginWrap").style.display="none";
-    await loadAllData();
+    showErr("Verbindungsfehler: "+e.message);
   }finally{
     btn.disabled=false;btn.textContent="Anmelden & App starten";
   }
@@ -361,7 +354,7 @@ function showErr(msg){
 //  API CALLS
 // ═══════════════════════════════════════════════
 function headers(){
-  const h={"Accept":"application/json","Content-Type":"application/x-www-form-urlencoded"};
+  const h={"Accept":"application/json","Content-Type":"application/json","apikey":SUPA_KEY};
   if(S.authToken&&S.authToken!=="session") h["Authorization"]=`Bearer ${S.authToken}`;
   return h;
 }

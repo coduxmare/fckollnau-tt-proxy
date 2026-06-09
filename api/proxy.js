@@ -2,66 +2,57 @@
 // Datei: api/proxy.js
 
 export default async function handler(req, res) {
-  // CORS-Header für deine PWA erlauben
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
-  // Ziel-URL aus Query-Parameter lesen
   const target = req.query.url;
   if (!target) {
     return res.status(400).json({ error: "Kein url Parameter angegeben" });
   }
 
-  // Nur mytischtennis.de erlauben (Sicherheit)
-  if (!target.startsWith("https://www.mytischtennis.de/")) {
+  // Erlaubte Domains
+  const allowed = [
+    "https://www.mytischtennis.de/",
+    "https://supabase.mytischtennis.de/",
+  ];
+  if (!allowed.some(d => target.startsWith(d))) {
     return res.status(403).json({ error: "Nur mytischtennis.de ist erlaubt" });
   }
 
   try {
-    // Alle Header vom Original-Request weiterleiten
     const forwardHeaders = {
-      "Content-Type": req.headers["content-type"] || "application/x-www-form-urlencoded",
+      "Content-Type": req.headers["content-type"] || "application/json",
       "Accept": req.headers["accept"] || "application/json, text/html, */*",
       "User-Agent": "Mozilla/5.0 (Android 14; Mobile) AppleWebKit/537.36",
     };
 
-    // Cookie weiterleiten (für Session)
-    if (req.headers["cookie"]) {
-      forwardHeaders["Cookie"] = req.headers["cookie"];
-    }
-    // Authorization weiterleiten
-    if (req.headers["authorization"]) {
-      forwardHeaders["Authorization"] = req.headers["authorization"];
-    }
+    // Supabase-spezifische Header weiterleiten
+    if (req.headers["apikey"]) forwardHeaders["apikey"] = req.headers["apikey"];
+    if (req.headers["authorization"]) forwardHeaders["Authorization"] = req.headers["authorization"];
+    if (req.headers["cookie"]) forwardHeaders["Cookie"] = req.headers["cookie"];
+    if (req.headers["x-client-info"]) forwardHeaders["x-client-info"] = req.headers["x-client-info"];
 
-    // Body für POST-Requests
     let body = undefined;
     if (req.method === "POST") {
-      if (typeof req.body === "object") {
-        body = new URLSearchParams(req.body).toString();
-      } else {
-        body = req.body;
-      }
+      body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
     }
 
     const response = await fetch(target, {
       method: req.method,
       headers: forwardHeaders,
-      body: body,
+      body,
       redirect: "follow",
     });
 
-    // Response-Cookie zurückgeben (für Login-Session)
+    // Alle relevanten Response-Header weitergeben
     const setCookie = response.headers.get("set-cookie");
     if (setCookie) {
       res.setHeader("Set-Cookie", setCookie);
-      // Cookie auch als JSON zurückgeben damit die PWA ihn lesen kann
       res.setHeader("X-Set-Cookie", setCookie);
     }
 
