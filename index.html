@@ -318,7 +318,7 @@ async function doLogin(){
   err.style.display="none";
   try{
     // Login über Vercel-Proxy (server-seitig, umgeht Supabase CORS/Origin-Check)
-    if(PROXY==="https://fckollnau-tt-proxy.vercel.app/"){showErr("Bitte zuerst die Vercel-URL in der App eintragen.");btn.disabled=false;btn.textContent="Anmelden & App starten";return;}
+    if(PROXY==="LaLiLu"){showErr("Bitte zuerst die Vercel-URL in der App eintragen.");btn.disabled=false;btn.textContent="Anmelden & App starten";return;}
     const resp=await fetch(`${PROXY}/api/proxy?action=login`,{
       method:"POST",
       headers:{"Content-Type":"application/json","Accept":"application/json"},
