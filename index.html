@@ -189,11 +189,11 @@ const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzYiIsInJvbGUiO
 // ── PROXY KONFIGURATION ──────────────────────
 // Trage hier deine Vercel-URL ein nach dem Deploy, z.B.:
 // const PROXY = "https://fckollnau-tt-proxy.vercel.app";
-const PROXY = "DEINE_VERCEL_URL_HIER";
+const PROXY = "https://fckollnau-tt-proxy.vercel.app";
 
 // Alle API-Calls laufen über den Proxy
 function proxyUrl(url) {
-  if (PROXY === "DEINE_VERCEL_URL_HIER") return url; // Fallback: direkt (schlägt wegen CORS fehl)
+  if (PROXY === "https://fckollnau-tt-proxy.vercel.app") return url; // Fallback: direkt (schlägt wegen CORS fehl)
   return `${PROXY}/api/proxy?url=${encodeURIComponent(url)}`;
 }
 
@@ -318,7 +318,7 @@ async function doLogin(){
   err.style.display="none";
   try{
     // Login über Vercel-Proxy (server-seitig, umgeht Supabase CORS/Origin-Check)
-    if(PROXY==="DEINE_VERCEL_URL_HIER"){showErr("Bitte zuerst die Vercel-URL in der App eintragen.");btn.disabled=false;btn.textContent="Anmelden & App starten";return;}
+    if(PROXY==="https://fckollnau-tt-proxy.vercel.app"){showErr("Bitte zuerst die Vercel-URL in der App eintragen.");btn.disabled=false;btn.textContent="Anmelden & App starten";return;}
     const resp=await fetch(`${PROXY}/api/proxy?action=login`,{
       method:"POST",
       headers:{"Content-Type":"application/json","Accept":"application/json"},
