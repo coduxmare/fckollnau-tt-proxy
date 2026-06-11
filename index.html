@@ -193,7 +193,7 @@ const PROXY = "https://fckollnau-tt-proxy.vercel.app";
 
 // Alle API-Calls laufen über den Proxy
 function proxyUrl(url) {
-  if (PROXY === "https://fckollnau-tt-proxy.vercel.app") return url; // Fallback: direkt (schlägt wegen CORS fehl)
+  if (PROXY === "DEINE_VERCEL_URL_HIER") return url; // Fallback: direkt (schlägt wegen CORS fehl)
   return `${PROXY}/api/proxy?url=${encodeURIComponent(url)}`;
 }
 
