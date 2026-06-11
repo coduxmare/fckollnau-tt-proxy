@@ -148,19 +148,45 @@ html,body{background:var(--bg);color:var(--tx);font-family:-apple-system,'Segoe 
     <div class="login-logo">
       <span class="icon">🏓</span>
       <h1>FC Kollnau TT</h1>
-      <p>Bitte mit myTischtennis-Account anmelden</p>
+      <p>Einmalige Verbindung mit myTischtennis</p>
     </div>
-    <div class="login-field">
-      <label>E-Mail-Adresse</label>
-      <input type="text" id="liUser" placeholder="dein@email.de" autocomplete="username" autocapitalize="off"/>
+
+    <!-- Schritt 1: Button zum Öffnen von mytischtennis.de -->
+    <div id="loginStep1">
+      <p class="login-note" style="text-align:left;margin-bottom:12px">
+        <b>Schritt 1:</b> Öffne mytischtennis.de und logge dich ein.<br>
+        Danach komm zurück zu dieser App.
+      </p>
+      <button class="login-btn" style="background:#1a6b3c" onclick="window.open('https://www.mytischtennis.de','_blank');document.getElementById('loginStep1').style.display='none';document.getElementById('loginStep2').style.display='block'">
+        🌐 mytischtennis.de öffnen & einloggen
+      </button>
     </div>
-    <div class="login-field">
-      <label>Passwort</label>
-      <input type="password" id="liPass" placeholder="••••••••" autocomplete="current-password"/>
+
+    <!-- Schritt 2: Token eingeben -->
+    <div id="loginStep2" style="display:none">
+      <p class="login-note" style="text-align:left;margin-bottom:12px">
+        <b>Schritt 2:</b> Öffne auf mytischtennis.de die Browser-Konsole (F12 → Console) und füge ein:
+      </p>
+      <code style="display:block;background:#111;color:#4ade80;padding:8px;border-radius:6px;font-size:11px;margin-bottom:12px;word-break:break-all">
+        document.cookie.split(";").find(c=>c.includes("sb-10-a"))?.split("=").slice(1).join("=")
+      </code>
+      <p class="login-note" style="text-align:left;margin-bottom:8px">
+        <b>Schritt 3:</b> Kopiere den angezeigten Wert und füge ihn hier ein:
+      </p>
+      <div class="login-field">
+        <label>Token (base64-eyJ...)</label>
+        <input type="text" id="liToken" placeholder="base64-eyJ..." autocomplete="off" autocapitalize="off"/>
+      </div>
+      <button class="login-btn" id="liBtn" onclick="doLoginToken()">✅ Token speichern & App starten</button>
+      <div id="liErr" style="display:none" class="login-err"></div>
+      <p style="margin-top:8px;font-size:11px;color:#888;text-align:center">
+        <a href="#" onclick="document.getElementById('loginStep1').style.display='block';document.getElementById('loginStep2').style.display='none';return false" style="color:#4ade80">← Zurück zu Schritt 1</a>
+      </p>
     </div>
-    <button class="login-btn" id="liBtn" onclick="doLogin()">Anmelden & App starten</button>
-    <div id="liErr" style="display:none" class="login-err"></div>
-    <p class="login-note">Login mit deiner myTischtennis.de E-Mail-Adresse<br>und deinem Passwort. Zugangsdaten werden<br>nur lokal auf deinem Gerät gespeichert.</p>
+
+    <!-- versteckte Felder damit der alte doLogin Code nicht bricht -->
+    <input type="hidden" id="liUser"/>
+    <input type="hidden" id="liPass"/>
   </div>
 </div>
 
@@ -277,7 +303,7 @@ const ALL_TEAMS = [
 // ═══════════════════════════════════════════════
 let S = {
   tab:"home", spielView:"upcoming",
-  loggedIn:false, authToken:null,
+  loggedIn:false, authToken:null, refreshToken:null,
   ttr: MYGAMES_FB[MYGAMES_FB.length-1].tA,
   ttrHistory: MYGAMES_FB.map(g=>g.tA),
   myGames: MYGAMES_FB,
@@ -295,16 +321,28 @@ function loadSaved(){
   try{
     const t=localStorage.getItem("mytt_token");
     const u=localStorage.getItem("mytt_user");
+    const r=localStorage.getItem("mytt_refresh");
+    if(r) S.refreshToken=r;
     if(t){S.authToken=t;S.loggedIn=true;S.playerName=u||"Markus Reiß";return true;}
+    // Wenn kein access token aber refresh token vorhanden → refresh versuchen
+    if(r) return "refresh";
   }catch(e){}
   return false;
 }
-function saveAuth(token,user){
-  try{localStorage.setItem("mytt_token",token);localStorage.setItem("mytt_user",user);}catch(e){}
+function saveAuth(token,user,refresh){
+  try{
+    localStorage.setItem("mytt_token",token);
+    localStorage.setItem("mytt_user",user);
+    if(refresh) localStorage.setItem("mytt_refresh",refresh);
+  }catch(e){}
 }
 function logout(){
-  try{localStorage.removeItem("mytt_token");localStorage.removeItem("mytt_user");}catch(e){}
-  S.loggedIn=false;S.authToken=null;
+  try{
+    localStorage.removeItem("mytt_token");
+    localStorage.removeItem("mytt_user");
+    localStorage.removeItem("mytt_refresh");
+  }catch(e){}
+  S.loggedIn=false;S.authToken=null;S.refreshToken=null;
   document.getElementById("loginWrap").style.display="flex";
 }
 
@@ -327,8 +365,9 @@ async function doLogin(){
     const data=await resp.json().catch(()=>({}));
     const token=data?.access_token||null;
     if(resp.ok&&token){
-      S.authToken=token;S.loggedIn=true;S.playerName=u;
-      saveAuth(token,u);
+      const refresh=data?.refresh_token||null;
+      S.authToken=token;S.refreshToken=refresh;S.loggedIn=true;S.playerName=u;
+      saveAuth(token,u,refresh);
       document.getElementById("loginWrap").style.display="none";
       await loadAllData();
     } else {
@@ -341,6 +380,57 @@ async function doLogin(){
     btn.disabled=false;btn.textContent="Anmelden & App starten";
   }
 }
+async function doLoginToken(){
+  const raw=document.getElementById("liToken").value.trim();
+  const btn=document.getElementById("liBtn");
+  if(!raw){document.getElementById("liErr").textContent="Bitte Token einfügen.";document.getElementById("liErr").style.display="block";return;}
+  btn.disabled=true;btn.textContent="Wird gespeichert…";
+  try{
+    // Token dekodieren: base64-eyJ... → JSON
+    let jsonStr;
+    if(raw.startsWith("base64-")){
+      jsonStr=atob(raw.slice(7));
+    } else {
+      jsonStr=atob(raw);
+    }
+    const obj=JSON.parse(jsonStr);
+    const accessToken=obj?.access_token||null;
+    const refreshToken=obj?.refresh_token||null;
+    const email=obj?.user?.email||"Markus Reiß";
+    if(!accessToken){throw new Error("Kein access_token im Token gefunden.");}
+    S.authToken=accessToken;
+    S.refreshToken=refreshToken;
+    S.loggedIn=true;
+    S.playerName=email;
+    saveAuth(accessToken,email,refreshToken);
+    document.getElementById("loginWrap").style.display="none";
+    await loadAllData();
+  }catch(e){
+    document.getElementById("liErr").textContent="Ungültiger Token: "+e.message;
+    document.getElementById("liErr").style.display="block";
+    btn.disabled=false;btn.textContent="✅ Token speichern & App starten";
+  }
+}
+
+async function refreshAccessToken(){
+  if(!S.refreshToken) return false;
+  try{
+    const resp=await fetch(`${PROXY}/api/proxy?action=refresh`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({refresh_token:S.refreshToken}),
+    });
+    const data=await resp.json().catch(()=>({}));
+    if(resp.ok&&data?.access_token){
+      S.authToken=data.access_token;
+      if(data.refresh_token) S.refreshToken=data.refresh_token;
+      saveAuth(data.access_token, S.playerName, data.refresh_token||S.refreshToken);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
 function showErr(msg){
   const e=document.getElementById("liErr");
   e.textContent=msg;e.style.display="block";
