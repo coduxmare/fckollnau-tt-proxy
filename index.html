@@ -492,32 +492,32 @@
 
 </div><!-- /app -->
 
+
 <script>
 // ═══════════════════════════════════════════════════════════
 //  CONFIG
 // ═══════════════════════════════════════════════════════════
 const CFG = {
-  proxy:      'https://fckollnau-tt-proxy.vercel.app/api/proxy',
-  clubNr:     '22036',
-  org:        'TTBW',
-  teamId:     '2960786',
-  groupId:    '494633',
-  season:     '25--26',
-  myName:     'Reiß',  // match by lastname
-  myNUID:     'P15B8F81E',
-  assoc:      'TTBW',
+  proxy:   'https://fckollnau-tt-proxy.vercel.app/api/proxy',
+  teamId:  '2960786',
+  groupId: '494633',
+  season:  '25--26',
+  myName:  'Reiß',
+  assoc:   'TTBW',
+  clubId:  '22036',
 };
 
 // ═══════════════════════════════════════════════════════════
-//  PROXY FETCH  (routes all requests through your Vercel proxy)
+//  FETCH – action-based proxy (server handles JSON+HTML)
 // ═══════════════════════════════════════════════════════════
-async function apiFetch(path, params = {}) {
-  const qs = new URLSearchParams(params).toString();
-  const fullUrl = `https://www.mytischtennis.de${path}${qs ? '?' + qs : ''}`;
-  const proxyUrl = `${CFG.proxy}?url=${encodeURIComponent(fullUrl)}`;
-  const res = await fetch(proxyUrl);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+async function proxyAction(action, extra = {}) {
+  const p = new URLSearchParams({ action,
+    groupId: CFG.groupId, teamId: CFG.teamId,
+    assoc: CFG.assoc, season: CFG.season, clubId: CFG.clubId,
+    ...extra });
+  const r = await fetch(`${CFG.proxy}?${p}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -537,141 +537,106 @@ function switchTab(name, btn) {
 // ═══════════════════════════════════════════════════════════
 function startClock() {
   const el = document.getElementById('live-time');
-  const tick = () => {
-    const now = new Date();
-    el.textContent = now.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
-  };
-  tick();
-  setInterval(tick, 30000);
+  const tick = () => { el.textContent = new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}); };
+  tick(); setInterval(tick, 30000);
 }
 
 // ═══════════════════════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════════════════════
 function fmtDate(iso) {
-  if (!iso) return {d:'?', m:'?', full:'?'};
+  if (!iso) return {d:'?', m:'?'};
   const dt = new Date(iso);
-  const d = dt.getDate().toString().padStart(2,'0');
-  const m = dt.toLocaleString('de-DE', {month:'short'});
-  const time = dt.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
-  return {d, m, full:`${d}. ${m} · ${time} Uhr`};
+  return {
+    d: dt.getDate().toString().padStart(2,'0'),
+    m: dt.toLocaleString('de-DE',{month:'short'}),
+    time: dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
+  };
 }
 
-function isMyTeamHome(meeting) {
-  return (meeting.team_home_id || '') == CFG.teamId;
+function loading(id) {
+  document.getElementById(id).innerHTML = '<div class="loading"><div class="spinner"></div><p>Lade…</p></div>';
 }
-
-function getOpponent(meeting) {
-  return isMyTeamHome(meeting) ? meeting.team_away : meeting.team_home;
+function err(id, msg) {
+  document.getElementById(id).innerHTML = `<div class="empty">${msg || 'Fehler beim Laden'}</div>`;
 }
 
 // ═══════════════════════════════════════════════════════════
-//  LOAD TABELLE
+//  TABELLE
 // ═══════════════════════════════════════════════════════════
-let tableData = null;
+let tableRows = null;
 
 async function loadTable() {
-  const _data = 'routes/click-tt+/$association+/$season+/$type+/$groupname.gruppe.$urlid+/tabelle.$filter';
-  const data = await apiFetch(
-    `/click-tt/${CFG.assoc}/${CFG.season}/ligen/x/gruppe/${CFG.groupId}/tabelle/gesamt`,
-    { _data }
-  );
-  return data;
+  const res = await proxyAction('tabelle');
+  // proxy returns { ok, source, data: { data: { league_table: [] } } }
+  const rows = res?.data?.data?.league_table || res?.data?.league_table || [];
+  tableRows = rows;
+  return rows;
 }
 
-function renderMiniTable(data) {
-  const rows = data?.data?.league_table || [];
-  if (!rows.length) { document.getElementById('mini-table-wrap').innerHTML = '<div class="empty">Keine Tabellendaten</div>'; return; }
+function renderMiniTable(rows) {
+  if (!rows.length) { err('mini-table-wrap','Keine Tabellendaten'); return; }
+  const myRow = rows.find(r => String(r.team_id) === CFG.teamId);
+  document.getElementById('stat-rank').textContent = myRow ? `#${myRow.table_rank}` : '—';
 
-  // find my team rank
-  const myRow = rows.find(r => r.team_id == CFG.teamId);
-  const myRank = myRow?.table_rank || 0;
-  document.getElementById('stat-rank').textContent = myRank ? `#${myRank}` : '—';
+  const idx = myRow ? rows.indexOf(myRow) : 0;
+  const slice = rows.slice(Math.max(0, idx-1), Math.min(rows.length, idx+4));
 
-  // show 3 around my team (or first 5)
-  let slice = rows;
-  if (myRank) {
-    const idx = rows.findIndex(r => r.team_id == CFG.teamId);
-    const start = Math.max(0, idx - 1);
-    const end = Math.min(rows.length, idx + 3);
-    slice = rows.slice(start, end);
-  } else {
-    slice = rows.slice(0, 5);
-  }
-
-  const html = `<table class="league-table">
-    <thead><tr><th></th><th>Mannschaft</th><th class="num">Pkt</th><th class="num">S:N</th></tr></thead>
-    <tbody>
-    ${slice.map(r => {
-      const isMe = r.team_id == CFG.teamId;
-      return `<tr class="${isMe ? 'my-team' : ''}">
-        <td><span class="rank-num ${r.table_rank <= 2 ? 'top' : ''}">${r.table_rank}.</span></td>
-        <td class="team-name ${isMe ? 'mine' : ''}">${r.team_name}${isMe ? ' 🏓' : ''}</td>
-        <td class="num pts">${r.points_won}:${r.points_lost}</td>
-        <td class="num ratio">${r.meetings_won}:${r.meetings_lost}</td>
-      </tr>`;
-    }).join('')}
-    </tbody>
-  </table>`;
-  document.getElementById('mini-table-wrap').innerHTML = html;
+  document.getElementById('mini-table-wrap').innerHTML = `
+    <table class="league-table">
+      <thead><tr><th></th><th>Mannschaft</th><th class="num">Pkt</th><th class="num">S:N</th></tr></thead>
+      <tbody>${slice.map(r => {
+        const me = String(r.team_id) === CFG.teamId || r.team_name?.includes('Kollnau III');
+        return `<tr class="${me?'my-team':''}">
+          <td><span class="rank-num ${r.table_rank<=2?'top':''}">${r.table_rank}.</span></td>
+          <td class="team-name ${me?'mine':''}">${r.team_name||'?'}${me?' 🏓':''}</td>
+          <td class="num pts">${r.points_won||0}:${r.points_lost||0}</td>
+          <td class="num ratio">${r.meetings_won||0}:${r.meetings_lost||0}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
 }
 
-function renderFullTable(data) {
-  const rows = data?.data?.league_table || [];
-  if (!rows.length) { document.getElementById('full-table-wrap').innerHTML = '<div class="empty" style="padding:20px">Keine Daten</div>'; return; }
-
-  const html = `<table class="league-table">
-    <thead><tr>
-      <th></th>
-      <th>Mannschaft</th>
-      <th class="num">Pkt</th>
-      <th class="num">S:U:N</th>
-      <th class="num">Spiele</th>
-    </tr></thead>
-    <tbody>
-    ${rows.map(r => {
-      const isMe = r.team_id == CFG.teamId;
-      return `<tr class="${isMe ? 'my-team' : ''}">
-        <td><span class="rank-num ${r.table_rank <= 2 ? 'top' : ''}">${r.table_rank}.</span></td>
-        <td class="team-name ${isMe ? 'mine' : ''}">${r.team_name}${isMe ? ' 🏓' : ''}</td>
-        <td class="num pts">${r.points_won}:${r.points_lost}</td>
-        <td class="num ratio">${r.meetings_won}:${r.meetings_tie}:${r.meetings_lost}</td>
-        <td class="num ratio">${r.matches_won}:${r.matches_lost}</td>
-      </tr>`;
-    }).join('')}
-    </tbody>
-  </table>`;
-  document.getElementById('full-table-wrap').innerHTML = html;
+function renderFullTable(rows) {
+  if (!rows.length) { err('full-table-wrap','Keine Daten'); return; }
+  document.getElementById('full-table-wrap').innerHTML = `
+    <table class="league-table">
+      <thead><tr><th></th><th>Mannschaft</th><th class="num">Pkt</th><th class="num">S:U:N</th><th class="num">Spiele</th></tr></thead>
+      <tbody>${rows.map(r => {
+        const me = String(r.team_id) === CFG.teamId || r.team_name?.includes('Kollnau III');
+        return `<tr class="${me?'my-team':''}">
+          <td><span class="rank-num ${r.table_rank<=2?'top':''}">${r.table_rank}.</span></td>
+          <td class="team-name ${me?'mine':''}">${r.team_name||'?'}${me?' 🏓':''}</td>
+          <td class="num pts">${r.points_won||0}:${r.points_lost||0}</td>
+          <td class="num ratio">${r.meetings_won||0}:${r.meetings_tie||0}:${r.meetings_lost||0}</td>
+          <td class="num ratio">${r.matches_won||0}:${r.matches_lost||0}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
 }
 
 // ═══════════════════════════════════════════════════════════
-//  LOAD SCHEDULE (team schedule)
+//  SPIELPLAN
 // ═══════════════════════════════════════════════════════════
-let scheduleData = null;
+let meetings = null;
 
 async function loadSchedule() {
-  const data = await apiFetch('/api/ttr/team/schedule', {
-    teamId: CFG.teamId,
-    season: CFG.season
-  });
+  const res = await proxyAction('spielplan');
+  // proxy returns { ok, source, meetings: [] }
+  const data = res?.meetings || [];
+  meetings = data;
   return data;
 }
 
-function renderNextMatch(meetings) {
+function renderNextMatch(list) {
   const now = new Date();
-  // find next upcoming
-  const upcoming = meetings
-    .filter(m => new Date(m.date) > now)
-    .sort((a,b) => new Date(a.date) - new Date(b.date));
-  const next = upcoming[0];
+  const next = list.filter(m => new Date(m.date) > now)
+                   .sort((a,b) => new Date(a.date)-new Date(b.date))[0];
+  if (!next) { err('next-match-wrap','Keine kommenden Spiele'); return; }
 
-  if (!next) {
-    document.getElementById('next-match-wrap').innerHTML = '<div class="empty">Keine kommenden Spiele</div>';
-    return;
-  }
   const dt = fmtDate(next.date);
-  const home = next.team_home_id == CFG.teamId;
-  const opp = home ? next.team_away : next.team_home;
+  const home = String(next.team_home_id) === CFG.teamId;
+  const opp  = home ? next.team_away : next.team_home;
 
   document.getElementById('next-match-wrap').innerHTML = `
     <div class="next-match">
@@ -682,329 +647,188 @@ function renderNextMatch(meetings) {
       <div class="next-match-divider"></div>
       <div class="next-match-info">
         <div class="next-match-vs">${opp || 'Gegner unbekannt'}</div>
-        <div class="next-match-meta">${new Date(next.date).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} Uhr · <span class="badge ${home ? 'badge-home' : 'badge-away'}">${home ? 'Heim' : 'Auswärts'}</span></div>
+        <div class="next-match-meta">${dt.time} Uhr &nbsp;<span class="badge ${home?'badge-home':'badge-away'}">${home?'Heim':'Auswärts'}</span></div>
       </div>
     </div>`;
 }
 
-function renderSchedule(meetings) {
-  if (!meetings || !meetings.length) {
-    document.getElementById('schedule-wrap').innerHTML = '<div class="empty">Kein Spielplan verfügbar</div>';
-    return;
-  }
-
-  const sorted = [...meetings].sort((a,b) => new Date(a.date) - new Date(b.date));
+function renderRecentMatches(list) {
   const now = new Date();
+  const past = list.filter(m => new Date(m.date) < now && m.matches_won != null)
+                   .sort((a,b) => new Date(b.date)-new Date(a.date))
+                   .slice(0,5);
+  if (!past.length) { err('recent-matches-wrap','Keine Begegnungen geladen'); return; }
 
-  const html = sorted.map(m => {
+  document.getElementById('recent-matches-wrap').innerHTML = past.map(m => {
     const dt = fmtDate(m.date);
-    const isPast = new Date(m.date) < now;
-    const home = m.team_home_id == CFG.teamId || m.team_home === 'FC Kollnau III';
-    const opp = home
-      ? (m.team_away || m.opponent_team_name || 'Gegner')
-      : (m.team_home || m.opponent_team_name || 'Gegner');
+    const home = String(m.team_home_id) === CFG.teamId;
+    const opp  = home ? m.team_away : m.team_home;
+    const myW  = parseInt(home ? m.matches_won : m.matches_lost)||0;
+    const myL  = parseInt(home ? m.matches_lost : m.matches_won)||0;
+    const win  = myW > myL;
+    return `<div class="match-item">
+      <div class="match-date-col"><div class="match-date-d">${dt.d}</div><div class="match-date-m">${dt.m}</div></div>
+      <div class="match-teams"><strong>${opp||'Gegner'}</strong><span><span class="badge ${home?'badge-home':'badge-away'}">${home?'Heim':'Auswärts'}</span></span></div>
+      <div class="match-result"><div class="result-score ${win?'result-win':'result-loss'}">${myW}:${myL}</div></div>
+    </div>`;
+  }).join('');
+}
 
-    let resultHtml = '';
-    if (isPast && m.matches_won != null) {
-      const myWon = home ? parseInt(m.matches_won || 0) : parseInt(m.matches_lost || 0);
-      const myLost = home ? parseInt(m.matches_lost || 0) : parseInt(m.matches_won || 0);
-      const isWin = myWon > myLost;
-      resultHtml = `<div class="match-result">
-        <div class="result-score ${isWin ? 'result-win' : 'result-loss'}">${myWon}:${myLost}</div>
-        <div style="font-size:10px;color:var(--text2)">${isWin ? 'Sieg' : 'Niederl.'}</div>
-      </div>`;
-    } else if (isPast) {
-      resultHtml = `<div class="match-result"><div class="result-pending">Ergebnis<br>ausstehend</div></div>`;
+function renderSchedule(list) {
+  if (!list.length) { err('schedule-wrap','Kein Spielplan'); return; }
+  const now = new Date();
+  const sorted = [...list].sort((a,b) => new Date(a.date)-new Date(b.date));
+  document.getElementById('schedule-wrap').innerHTML = sorted.map(m => {
+    const dt = fmtDate(m.date);
+    const past = new Date(m.date) < now;
+    const home = String(m.team_home_id) === CFG.teamId;
+    const opp  = home ? m.team_away : m.team_home;
+    let right;
+    if (past && m.matches_won != null) {
+      const myW = parseInt(home?m.matches_won:m.matches_lost)||0;
+      const myL = parseInt(home?m.matches_lost:m.matches_won)||0;
+      right = `<div class="match-result"><div class="result-score ${myW>myL?'result-win':'result-loss'}">${myW}:${myL}</div><div style="font-size:10px;color:var(--text2)">${myW>myL?'Sieg':'Niederl.'}</div></div>`;
+    } else if (past) {
+      right = `<div class="match-result"><div class="result-pending">ausstehend</div></div>`;
     } else {
-      resultHtml = `<div class="match-result"><div class="result-pending">${new Date(m.date).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} Uhr</div></div>`;
+      right = `<div class="match-result"><div class="result-pending">${dt.time}<br>Uhr</div></div>`;
     }
-
     return `<div class="match-item">
-      <div class="match-date-col">
-        <div class="match-date-d">${dt.d}</div>
-        <div class="match-date-m">${dt.m}</div>
-      </div>
-      <div class="match-teams">
-        <strong>${opp}</strong>
-        <span><span class="badge ${home ? 'badge-home' : 'badge-away'}">${home ? 'Heim' : 'Auswärts'}</span></span>
-      </div>
-      ${resultHtml}
+      <div class="match-date-col"><div class="match-date-d">${dt.d}</div><div class="match-date-m">${dt.m}</div></div>
+      <div class="match-teams"><strong>${opp||'?'}</strong><span><span class="badge ${home?'badge-home':'badge-away'}">${home?'Heim':'Auswärts'}</span></span></div>
+      ${right}
     </div>`;
   }).join('');
-
-  document.getElementById('schedule-wrap').innerHTML = html;
-}
-
-function renderRecentMatches(meetings) {
-  const now = new Date();
-  const past = meetings
-    .filter(m => new Date(m.date) < now)
-    .sort((a,b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 5);
-
-  if (!past.length) {
-    document.getElementById('recent-matches-wrap').innerHTML = '<div class="empty">Keine Begegnungen geladen</div>';
-    return;
-  }
-
-  const html = past.map(m => {
-    const dt = fmtDate(m.date);
-    const home = m.team_home_id == CFG.teamId;
-    const opp = home ? (m.team_away || m.opponent_team_name) : (m.team_home || m.opponent_team_name);
-    const myWon = home ? parseInt(m.matches_won || 0) : parseInt(m.matches_lost || 0);
-    const myLost = home ? parseInt(m.matches_lost || 0) : parseInt(m.matches_won || 0);
-    const isWin = myWon > myLost;
-
-    return `<div class="match-item">
-      <div class="match-date-col">
-        <div class="match-date-d">${dt.d}</div>
-        <div class="match-date-m">${dt.m}</div>
-      </div>
-      <div class="match-teams">
-        <strong>${opp || 'Gegner'}</strong>
-        <span><span class="badge ${home ? 'badge-home' : 'badge-away'}">${home ? 'Heim' : 'Auswärts'}</span></span>
-      </div>
-      <div class="match-result">
-        <div class="result-score ${isWin ? 'result-win' : 'result-loss'}">${myWon}:${myLost}</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  document.getElementById('recent-matches-wrap').innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════════════
-//  LOAD PLAYER BALANCES (Spielerbilanzen)
+//  BILANZEN
 // ═══════════════════════════════════════════════════════════
-async function loadPlayerBalances() {
-  const _data = 'routes/click-tt+/$association+/$season+/$type+/($groupname).gruppe.$urlid_.mannschaft.$teamid.$teamname+/spielerbilanzen.$filter';
-  const data = await apiFetch(
-    `/click-tt/${CFG.assoc}/${CFG.season}/ligen/x/gruppe/${CFG.groupId}/mannschaft/${CFG.teamId}/x/spielerbilanzen/gesamt`,
-    { _data }
-  );
-  return data;
+async function loadBilanzen() {
+  const res = await proxyAction('bilanzen');
+  return res?.player_balances || [];
 }
 
-function renderPlayerBalances(data) {
-  const balances = data?.data?.player_balances || [];
-  if (!balances.length) {
-    document.getElementById('player-balances-wrap').innerHTML = '<div class="empty">Keine Bilanzdaten</div>';
-    return;
-  }
+function renderBilanzen(balances) {
+  if (!balances.length) { err('player-balances-wrap','Keine Bilanzdaten'); err('my-stats-wrap',''); return; }
 
-  // find my stats
   const me = balances.find(p =>
-    (p.player_lastname || p.player_id || '').toLowerCase().includes(CFG.myName.toLowerCase())
+    (p.player_lastname||'').toLowerCase().includes(CFG.myName.toLowerCase())
   );
-
   if (me) {
-    const wins = parseInt(me.points_won || 0);
-    const losses = parseInt(me.points_lost || 0);
-    const total = wins + losses;
-    const quote = total > 0 ? Math.round(wins / total * 100) + '%' : '—';
-    document.getElementById('stat-wins').textContent = wins;
-    document.getElementById('stat-losses').textContent = losses;
-    document.getElementById('stat-quote').textContent = quote;
-    document.getElementById('my-ttr-display').textContent = '—'; // TTR from meldungen below
-
-    // my stats section
+    const w = parseInt(me.points_won)||0, l = parseInt(me.points_lost)||0;
+    const q = w+l > 0 ? Math.round(w/(w+l)*100)+'%' : '—';
+    document.getElementById('stat-wins').textContent = w;
+    document.getElementById('stat-losses').textContent = l;
+    document.getElementById('stat-quote').textContent = q;
     document.getElementById('my-stats-wrap').innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        <div class="hero-stat"><div class="hero-stat-val green">${wins}</div><div class="hero-stat-lbl">Siege</div></div>
-        <div class="hero-stat"><div class="hero-stat-val red">${losses}</div><div class="hero-stat-lbl">Niederlagen</div></div>
-        <div class="hero-stat"><div class="hero-stat-val">${quote}</div><div class="hero-stat-lbl">Quote</div></div>
+        <div class="hero-stat"><div class="hero-stat-val green">${w}</div><div class="hero-stat-lbl">Siege</div></div>
+        <div class="hero-stat"><div class="hero-stat-val red">${l}</div><div class="hero-stat-lbl">Niederlagen</div></div>
+        <div class="hero-stat"><div class="hero-stat-val">${q}</div><div class="hero-stat-lbl">Quote</div></div>
       </div>`;
   } else {
-    document.getElementById('my-stats-wrap').innerHTML = '<div class="empty">Keine persönlichen Daten</div>';
+    err('my-stats-wrap','Markus Reiß nicht gefunden');
   }
 
-  const sorted = [...balances].sort((a,b) => parseInt(b.points_won||0) - parseInt(a.points_won||0));
-  const html = sorted.map((p, i) => {
-    const isMe = (p.player_lastname || '').toLowerCase().includes(CFG.myName.toLowerCase());
-    const name = `${p.player_firstname || ''} ${p.player_lastname || p.player_id || '?'}`.trim();
+  const sorted = [...balances].sort((a,b)=>(parseInt(b.points_won)||0)-(parseInt(a.points_won)||0));
+  document.getElementById('player-balances-wrap').innerHTML = sorted.map((p,i) => {
+    const mine = (p.player_lastname||'').toLowerCase().includes(CFG.myName.toLowerCase());
+    const name = [p.player_firstname, p.player_lastname].filter(Boolean).join(' ') || p.player_id || '?';
     return `<div class="player-row">
-      <div class="player-rank-badge ${isMe ? 'me' : ''}">${i + 1}</div>
-      <div class="player-name ${isMe ? 'me' : ''}">${name}${isMe ? ' 🏓' : ''}</div>
-      <div class="player-wl">
-        <span class="wl-win">${p.points_won || 0}</span>
-        <span class="wl-sep">:</span>
-        <span class="wl-loss">${p.points_lost || 0}</span>
-      </div>
+      <div class="player-rank-badge ${mine?'me':''}">${i+1}</div>
+      <div class="player-name ${mine?'me':''}">${name}${mine?' 🏓':''}</div>
+      <div class="player-wl"><span class="wl-win">${p.points_won||0}</span><span class="wl-sep">:</span><span class="wl-loss">${p.points_lost||0}</span></div>
     </div>`;
   }).join('');
-
-  document.getElementById('player-balances-wrap').innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════════════
-//  LOAD TEAM PLAYERS (Aufstellung + TTR aus Meldungen)
+//  VEREIN
 // ═══════════════════════════════════════════════════════════
-async function loadTeamPlayers() {
-  const data = await apiFetch('/api/ttr/team/players', { teamId: CFG.teamId });
-  return data;
+async function loadVereinsTeams() {
+  const res = await proxyAction('vereinsteams');
+  return res?.teams || [];
 }
 
-function renderTeamPlayers(data) {
-  const players = data?.data || [];
-  if (!players.length) {
-    document.getElementById('team-players-wrap').innerHTML = '<div class="empty">Keine Aufstellung</div>';
-    return;
-  }
-
-  const html = players.map(p => {
-    const isMe = (p.lastname || '').toLowerCase().includes(CFG.myName.toLowerCase());
-    const name = `${p.firstname || ''} ${p.lastname || ''}`.trim();
-    return `<div class="player-row">
-      <div class="player-rank-badge ${isMe ? 'me' : ''}">${p.rank || '?'}</div>
-      <div class="player-name ${isMe ? 'me' : ''}">${name}${isMe ? ' 🏓' : ''}</div>
-      <div style="font-size:11px;color:var(--text2)">${p.internal_id || ''}</div>
-    </div>`;
-  }).join('');
-
-  document.getElementById('team-players-wrap').innerHTML = html;
-}
-
-// ═══════════════════════════════════════════════════════════
-//  LOAD CLUB TEAMS
-// ═══════════════════════════════════════════════════════════
-async function loadClubTeams() {
-  const data = await apiFetch('/api/ttr/teams', {
-    clubNumber: CFG.clubNr,
-    organization: CFG.org
-  });
-  return data;
-}
-
-function renderClubTeams(data) {
-  const teams = data?.data || [];
-  if (!teams.length) {
-    document.getElementById('club-teams-wrap').innerHTML = '<div class="empty">Keine Mannschaften gefunden</div>';
-    return;
-  }
-
-  const html = `
+function renderVereinsTeams(teams) {
+  if (!teams.length) { err('club-teams-wrap','Keine Mannschaften'); return; }
+  document.getElementById('club-teams-wrap').innerHTML = `
     <div style="margin-bottom:12px;padding:4px 0">
       <div style="font-size:24px;font-weight:800;letter-spacing:-1px">FC Kollnau</div>
       <div style="font-size:12px;color:var(--text2);margin-top:2px">Vereinsnr. 22036 · TTBW · Waldkirch</div>
     </div>
     <div class="club-teams-grid">
-    ${teams.map(t => {
-      const isMe = t.team_id == CFG.teamId;
-      return `<div class="club-team-card" style="${isMe ? 'border:1px solid rgba(29,185,84,.3)' : ''}">
-        <div class="club-team-rank" style="${isMe ? 'color:var(--accent)' : ''}">#${t.table_rank || '?'}</div>
-        <div class="club-team-info">
-          <div class="club-team-name">${t.team_name}${isMe ? ' 🏓' : ''}</div>
-          <div class="club-team-liga">${t.league_name || '—'} · ${t.team_organisation_short || ''}</div>
-        </div>
-        <div class="club-team-pts">
-          <div class="club-team-pts-val">${t.points_won || 0}:${t.points_lost || 0}</div>
-          <div class="club-team-pts-lbl">Punkte</div>
-        </div>
-      </div>`;
-    }).join('')}
+      ${teams.map(t => {
+        const me = String(t.team_id) === CFG.teamId || t.team_name?.includes('III');
+        return `<div class="club-team-card" style="${me?'border:1px solid rgba(29,185,84,.3)':''}">
+          <div class="club-team-rank" style="${me?'color:var(--accent)':''}">${t.table_rank!=null?'#'+t.table_rank:'—'}</div>
+          <div class="club-team-info">
+            <div class="club-team-name">${t.team_name||'?'}${me?' 🏓':''}</div>
+            <div class="club-team-liga">${t.league_name||'TTBW'} · ${t.team_organisation_short||''}</div>
+          </div>
+          <div class="club-team-pts">
+            <div class="club-team-pts-val">${t.points_won||0}:${t.points_lost||0}</div>
+            <div class="club-team-pts-lbl">Punkte</div>
+          </div>
+        </div>`;
+      }).join('')}
     </div>`;
-
-  document.getElementById('club-teams-wrap').innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════════════
-//  LOAD TTR from Mannschaftsmeldungen (has Q-TTR per player)
+//  TTR (aus Mannschaftsmeldungen – Q-TTR)
 // ═══════════════════════════════════════════════════════════
 async function loadMyTTR() {
   try {
-    const _data = 'routes/click-tt+/$association+/$season+/$type+/$groupname.gruppe.$urlid+/mannschaftsmeldungen.$filter';
-    const data = await apiFetch(
-      `/click-tt/${CFG.assoc}/${CFG.season}/ligen/x/gruppe/${CFG.groupId}/mannschaftsmeldungen/vr`,
-      { _data }
-    );
-
-    // find FC Kollnau III team
-    const teams = data?.data?.teams || [];
-    const myTeam = teams.find(t => t.team_id == CFG.teamId);
-    if (!myTeam) return null;
-
-    // find Markus Reiß
-    const players = myTeam.players || [];
-    const me = players.find(p =>
-      (p.player_lastname || p.lastname || '').toLowerCase().includes(CFG.myName.toLowerCase())
-    );
-    if (!me) return null;
-
-    return me.q_ttr || me.ttr || me.fed_rank || null;
-  } catch (e) {
-    return null;
-  }
+    const res = await proxyAction('mannschaftsmeldungen');
+    const players = res?.players || [];
+    const me = players.find(p => (p.lastname||p.player_lastname||'').toLowerCase().includes(CFG.myName.toLowerCase()));
+    return me?.q_ttr || me?.ttr || null;
+  } catch { return null; }
 }
 
 // ═══════════════════════════════════════════════════════════
 //  MAIN LOAD
 // ═══════════════════════════════════════════════════════════
+function resetHomeLoaders() {
+  loading('next-match-wrap'); loading('mini-table-wrap'); loading('recent-matches-wrap');
+}
+
 async function loadAll() {
-  // Reset loading states for home
-  ['next-match-wrap','mini-table-wrap','recent-matches-wrap'].forEach(id => {
-    document.getElementById(id).innerHTML = '<div class="loading"><div class="spinner"></div><p>Lade…</p></div>';
-  });
+  resetHomeLoaders();
 
-  // Load table
-  loadTable().then(data => {
-    tableData = data;
-    renderMiniTable(data);
-    if (loaded['tabelle']) renderFullTable(data);
-  }).catch(e => {
-    console.error('Table error:', e);
-    document.getElementById('mini-table-wrap').innerHTML = '<div class="empty">Fehler beim Laden der Tabelle</div>';
-  });
+  // Tabelle
+  loadTable()
+    .then(rows => { renderMiniTable(rows); if (loaded['tabelle']) renderFullTable(rows); })
+    .catch(e => { console.error('Tabelle:', e); err('mini-table-wrap','Tabelle konnte nicht geladen werden'); });
 
-  // Load schedule
-  loadSchedule().then(data => {
-    const meetings = data?.data || [];
-    scheduleData = meetings;
-    renderNextMatch(meetings);
-    renderRecentMatches(meetings);
-    if (loaded['spiele']) renderSchedule(meetings);
-  }).catch(e => {
-    console.error('Schedule error:', e);
-    document.getElementById('next-match-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>';
-    document.getElementById('recent-matches-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>';
-  });
+  // Spielplan
+  loadSchedule()
+    .then(list => { renderNextMatch(list); renderRecentMatches(list); if (loaded['spiele']) renderSchedule(list); })
+    .catch(e => { console.error('Spielplan:', e); err('next-match-wrap','Spielplan konnte nicht geladen werden'); err('recent-matches-wrap',''); });
 
-  // Load TTR
-  loadMyTTR().then(ttr => {
-    if (ttr) {
-      document.getElementById('ttr-val').textContent = ttr;
-      document.getElementById('my-ttr-display').textContent = ttr;
-    } else {
-      document.getElementById('ttr-val').textContent = '—';
-    }
-  }).catch(() => {});
+  // Bilanzen (für Hero-Stats)
+  loadBilanzen()
+    .catch(() => {});
 }
 
 async function loadTab(name) {
   if (name === 'tabelle') {
-    if (tableData) renderFullTable(tableData);
-    else loadTable().then(d => { tableData = d; renderFullTable(d); })
-       .catch(() => { document.getElementById('full-table-wrap').innerHTML = '<div class="empty" style="padding:20px">Fehler beim Laden</div>'; });
+    if (tableRows?.length) renderFullTable(tableRows);
+    else loadTable().then(renderFullTable).catch(() => err('full-table-wrap','Fehler'));
   }
   if (name === 'verein') {
-    loadClubTeams().then(renderClubTeams)
-      .catch(() => { document.getElementById('club-teams-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>'; });
+    loadVereinsTeams().then(renderVereinsTeams).catch(() => err('club-teams-wrap','Fehler'));
   }
   if (name === 'spiele') {
-    if (scheduleData) renderSchedule(scheduleData);
-    else loadSchedule().then(d => { scheduleData = d?.data || []; renderSchedule(scheduleData); })
-        .catch(() => { document.getElementById('schedule-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>'; });
+    if (meetings?.length) renderSchedule(meetings);
+    else loadSchedule().then(renderSchedule).catch(() => err('schedule-wrap','Fehler'));
   }
   if (name === 'ich') {
-    loadPlayerBalances().then(renderPlayerBalances)
-      .catch(() => {
-        document.getElementById('player-balances-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>';
-        document.getElementById('my-stats-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>';
-      });
-    loadTeamPlayers().then(renderTeamPlayers)
-      .catch(() => { document.getElementById('team-players-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>'; });
-    loadMyTTR().then(ttr => {
-      if (ttr) document.getElementById('my-ttr-display').textContent = ttr;
-    }).catch(() => {});
+    loading('player-balances-wrap'); loading('my-stats-wrap');
+    loadBilanzen().then(renderBilanzen).catch(() => { err('player-balances-wrap','Fehler'); err('my-stats-wrap','Fehler'); });
+    loadMyTTR().then(ttr => { if (ttr) { document.getElementById('ttr-val').textContent = ttr; document.getElementById('my-ttr-display').textContent = ttr; } }).catch(()=>{});
   }
 }
 
