@@ -1,10 +1,8 @@
 // Vercel Serverless Function – myTischtennis Proxy
-// Datei: api/proxy.js
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info, x-sb-token");
 
   if (req.method === "OPTIONS") return res.status(200).end();
 
@@ -14,54 +12,22 @@ export default async function handler(req, res) {
   // ── Token Refresh ──────────────────────────────
   if (req.query.action === "refresh") {
     try {
-      const { refresh_token } = typeof req.body === "string"
-        ? JSON.parse(req.body) : req.body;
-
+      const { refresh_token } = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
       const resp = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=refresh_token`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
           "apikey": SUPA_KEY,
           "Authorization": `Bearer ${SUPA_KEY}`,
           "Origin": "https://www.mytischtennis.de",
           "Referer": "https://www.mytischtennis.de/",
-          "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36",
         },
         body: JSON.stringify({ refresh_token }),
       });
-
       const data = await resp.json().catch(() => ({}));
       return res.status(resp.status).json(data);
     } catch (err) {
       return res.status(500).json({ error: "Refresh-Fehler", message: err.message });
-    }
-  }
-
-  // ── Login (mit CAPTCHA – bleibt als Fallback) ──
-  if (req.query.action === "login") {
-    try {
-      const { email, password } = typeof req.body === "string"
-        ? JSON.parse(req.body) : req.body;
-
-      const resp = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "apikey": SUPA_KEY,
-          "Authorization": `Bearer ${SUPA_KEY}`,
-          "Origin": "https://www.mytischtennis.de",
-          "Referer": "https://www.mytischtennis.de/",
-          "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await resp.json().catch(() => ({}));
-      return res.status(resp.status).json(data);
-    } catch (err) {
-      return res.status(500).json({ error: "Login-Fehler", message: err.message });
     }
   }
 
@@ -79,16 +45,26 @@ export default async function handler(req, res) {
 
   try {
     const forwardHeaders = {
-      "Content-Type": req.headers["content-type"] || "application/json",
       "Accept": req.headers["accept"] || "application/json, text/html, */*",
       "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36",
       "Origin": "https://www.mytischtennis.de",
       "Referer": "https://www.mytischtennis.de/",
     };
 
-    if (req.headers["apikey"]) forwardHeaders["apikey"] = req.headers["apikey"];
-    if (req.headers["authorization"]) forwardHeaders["Authorization"] = req.headers["authorization"];
-    if (req.headers["cookie"]) forwardHeaders["Cookie"] = req.headers["cookie"];
+    if (req.headers["content-type"]) {
+      forwardHeaders["Content-Type"] = req.headers["content-type"];
+    }
+
+    // Auth Token als Cookie weiterleiten – mytischtennis.de erwartet sb-10-auth-token
+    const authHeader = req.headers["authorization"] || req.headers["x-sb-token"];
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "").trim();
+      // Token als Cookie im Format das mytischtennis.de erwartet
+      const cookiePayload = JSON.stringify({ access_token: token, token_type: "bearer" });
+      const cookieValue = "base64-" + Buffer.from(cookiePayload).toString("base64");
+      forwardHeaders["Cookie"] = `sb-10-auth-token=${cookieValue}`;
+      forwardHeaders["Authorization"] = `Bearer ${token}`;
+    }
 
     let body = undefined;
     if (req.method === "POST") {
@@ -103,10 +79,7 @@ export default async function handler(req, res) {
     });
 
     const setCookie = response.headers.get("set-cookie");
-    if (setCookie) {
-      res.setHeader("Set-Cookie", setCookie);
-      res.setHeader("X-Set-Cookie", setCookie);
-    }
+    if (setCookie) res.setHeader("X-Set-Cookie", setCookie);
 
     const contentType = response.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
