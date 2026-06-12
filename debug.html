@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FC Kollnau – API Debug</title>
+<style>
+  body { font-family: monospace; background: #0a1628; color: #e8edf5; padding: 16px; font-size: 13px; }
+  h1 { color: #1db954; margin-bottom: 20px; }
+  .test { background: #152238; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+  .test-header { padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,.1); }
+  .test-label { font-weight: 700; color: #e8edf5; flex: 1; }
+  .test-url { font-size: 11px; color: #8ca0bc; flex: 2; word-break: break-all; }
+  .test-status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; min-width: 60px; text-align: center; }
+  .status-ok  { background: rgba(29,185,84,.2); color: #1db954; }
+  .status-err { background: rgba(239,68,68,.2); color: #ef4444; }
+  .status-wait { background: rgba(255,255,255,.1); color: #8ca0bc; }
+  .test-body { padding: 12px 14px; }
+  pre { white-space: pre-wrap; word-break: break-all; font-size: 11px; color: #8ca0bc; max-height: 300px; overflow-y: auto; }
+  .run-btn { background: #1db954; color: #000; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-weight: 700; font-size: 12px; }
+  .run-all-btn { background: #1db954; color: #000; border: none; border-radius: 8px; padding: 10px 20px; cursor: pointer; font-weight: 700; font-size: 14px; margin-bottom: 20px; }
+  .parsed { margin-top: 8px; padding: 8px; background: rgba(29,185,84,.08); border-radius: 6px; border: 1px solid rgba(29,185,84,.2); }
+  .parsed-label { font-size: 10px; color: #1db954; font-weight: 700; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<h1>🏓 FC Kollnau – API Debug</h1>
+<button class="run-all-btn" onclick="runAll()">▶ Alle Tests starten</button>
+
+<div id="tests"></div>
+
+<script>
+const PROXY = 'https://fckollnau-tt-proxy.vercel.app/api/proxy';
+const TEAM  = '2960786';
+const GROUP = '494633';
+const ASSOC = 'TTBW';
+const SEASON = '25--26';
+const CLUB  = '22036';
+
+const TESTS = [
+  {
+    label: 'Action: tabelle',
+    url: () => `${PROXY}?action=tabelle&groupId=${GROUP}&assoc=${ASSOC}&season=${SEASON}`,
+    parse: d => {
+      const rows = d?.data?.data?.league_table || d?.data?.league_table || [];
+      return rows.length ? `✅ ${rows.length} Mannschaften. Erste: ${rows[0]?.team_name} Rang ${rows[0]?.table_rank}` : '❌ Keine league_table gefunden. Keys: ' + JSON.stringify(Object.keys(d||{}));
+    }
+  },
+  {
+    label: 'Action: spielplan',
+    url: () => `${PROXY}?action=spielplan&groupId=${GROUP}&teamId=${TEAM}&assoc=${ASSOC}&season=${SEASON}`,
+    parse: d => {
+      const m = d?.meetings || [];
+      return m.length ? `✅ ${m.length} Begegnungen. Erste: ${m[0]?.team_home} vs ${m[0]?.team_away} am ${m[0]?.date}` : '❌ Keine meetings. Keys: ' + JSON.stringify(Object.keys(d||{}));
+    }
+  },
+  {
+    label: 'Action: bilanzen',
+    url: () => `${PROXY}?action=bilanzen&groupId=${GROUP}&teamId=${TEAM}&assoc=${ASSOC}&season=${SEASON}`,
+    parse: d => {
+      const b = d?.player_balances || [];
+      return b.length ? `✅ ${b.length} Spieler. Erste: ${b[0]?.player_lastname} ${b[0]?.points_won}:${b[0]?.points_lost}` : '❌ Keine player_balances. Keys: ' + JSON.stringify(Object.keys(d||{}));
+    }
+  },
+  {
+    label: 'Action: vereinsteams',
+    url: () => `${PROXY}?action=vereinsteams&clubId=${CLUB}&assoc=${ASSOC}&season=${SEASON}`,
+    parse: d => {
+      const t = d?.teams || [];
+      return t.length ? `✅ ${t.length} Teams. Erste: ${t[0]?.team_name}` : '❌ Keine teams. Keys: ' + JSON.stringify(Object.keys(d||{}));
+    }
+  },
+  {
+    label: 'Action: mannschaftsmeldungen',
+    url: () => `${PROXY}?action=mannschaftsmeldungen&groupId=${GROUP}&teamId=${TEAM}&assoc=${ASSOC}&season=${SEASON}`,
+    parse: d => {
+      const p = d?.players || [];
+      const reiss = p.find(x => (x.lastname||x.player_lastname||'').toLowerCase().includes('rei'));
+      return p.length ? `✅ ${p.length} Spieler. Reiß: ${JSON.stringify(reiss)||'nicht gefunden'}` : '❌ Keine players. Keys: ' + JSON.stringify(Object.keys(d||{}));
+    }
+  },
+  {
+    label: 'Direkt: click-tt Tabelle (HTML)',
+    url: () => `${PROXY}?url=${encodeURIComponent(`https://www.mytischtennis.de/click-tt/${ASSOC}/${SEASON}/ligen/x/gruppe/${GROUP}/tabelle/gesamt`)}`,
+    parse: d => typeof d === 'string' ? (d.includes('FC Kollnau') ? '✅ HTML mit FC Kollnau gefunden' : '⚠️ HTML aber kein FC Kollnau') : '❓ Kein String: ' + typeof d
+  },
+  {
+    label: 'Direkt: click-tt Tabelle (JSON via _data)',
+    url: () => `${PROXY}?url=${encodeURIComponent(`https://www.mytischtennis.de/click-tt/${ASSOC}/${SEASON}/ligen/x/gruppe/${GROUP}/tabelle/gesamt?_data=routes%2Fclick-tt%2B%2F%24association%2B%2F%24season%2B%2F%24type%2B%2F%24groupname.gruppe.%24urlid%2B%2Ftabelle.%24filter`)}`,
+    parse: d => {
+      if (typeof d === 'object') {
+        const rows = d?.data?.league_table || [];
+        return rows.length ? `✅ JSON mit ${rows.length} Zeilen` : '⚠️ JSON aber kein league_table. Keys: ' + JSON.stringify(Object.keys(d||{}));
+      }
+      return '❌ Kein JSON zurück, sondern: ' + String(d).slice(0,100);
+    }
+  },
+  {
+    label: 'Direkt: Spielerbilanzen (HTML)',
+    url: () => `${PROXY}?url=${encodeURIComponent(`https://www.mytischtennis.de/click-tt/${ASSOC}/${SEASON}/ligen/x/gruppe/${GROUP}/mannschaft/${TEAM}/x/spielerbilanzen/gesamt`)}`,
+    parse: d => typeof d === 'string' ? (d.includes('Reiß') || d.includes('Reiss') ? '✅ HTML mit Reiß gefunden' : (d.includes('Bilanz') ? '⚠️ HTML aber kein Reiß' : '❌ Unerwarteter HTML-Inhalt')) : '❓ Typ: ' + typeof d
+  },
+  {
+    label: 'Direkt: Vereinsseite FC Kollnau (HTML)',
+    url: () => `${PROXY}?url=${encodeURIComponent(`https://www.mytischtennis.de/click-tt/${ASSOC}/${SEASON}/verein/${CLUB}/x/mannschaften`)}`,
+    parse: d => typeof d === 'string' ? (d.includes('Kollnau') ? '✅ HTML mit FC Kollnau' : '⚠️ HTML ohne FC Kollnau: ' + d.slice(0,200)) : '❓ Typ: ' + typeof d
+  },
+];
+
+function buildUI() {
+  const c = document.getElementById('tests');
+  c.innerHTML = TESTS.map((t,i) => `
+    <div class="test" id="test-${i}">
+      <div class="test-header">
+        <span class="test-label">${t.label}</span>
+        <span class="test-status status-wait" id="status-${i}">–</span>
+        <button class="run-btn" onclick="runTest(${i})">Run</button>
+      </div>
+      <div class="test-body">
+        <div style="font-size:10px;color:#8ca0bc;margin-bottom:6px;word-break:break-all" id="url-${i}"></div>
+        <div class="parsed" id="parsed-${i}" style="display:none">
+          <div class="parsed-label">ERGEBNIS</div>
+          <div id="parsed-text-${i}"></div>
+        </div>
+        <pre id="raw-${i}">Noch nicht getestet</pre>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function runTest(i) {
+  const t = TESTS[i];
+  const url = t.url();
+  document.getElementById('url-'+i).textContent = url;
+  document.getElementById('status-'+i).className = 'test-status status-wait';
+  document.getElementById('status-'+i).textContent = '…';
+  document.getElementById('raw-'+i).textContent = 'Lade…';
+  document.getElementById('parsed-'+i).style.display = 'none';
+
+  try {
+    const start = Date.now();
+    const res = await fetch(url);
+    const ms = Date.now() - start;
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = text; }
+
+    document.getElementById('status-'+i).className = `test-status ${res.ok ? 'status-ok' : 'status-err'}`;
+    document.getElementById('status-'+i).textContent = `${res.status} (${ms}ms)`;
+    document.getElementById('raw-'+i).textContent = typeof data === 'object'
+      ? JSON.stringify(data, null, 2).slice(0, 2000)
+      : String(data).slice(0, 1000);
+
+    const parsed = document.getElementById('parsed-'+i);
+    parsed.style.display = 'block';
+    document.getElementById('parsed-text-'+i).textContent = t.parse(data);
+  } catch(e) {
+    document.getElementById('status-'+i).className = 'test-status status-err';
+    document.getElementById('status-'+i).textContent = 'ERR';
+    document.getElementById('raw-'+i).textContent = 'Fehler: ' + e.message;
+  }
+}
+
+async function runAll() {
+  for (let i = 0; i < TESTS.length; i++) {
+    await runTest(i);
+    await new Promise(r => setTimeout(r, 300));
+  }
+}
+
+buildUI();
+</script>
+</body>
+</html>
