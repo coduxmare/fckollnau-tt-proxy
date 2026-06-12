@@ -1,879 +1,1019 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<meta name="theme-color" content="#0a0a0a"/>
-<meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="FC Kollnau TT"/>
-<title>FC Kollnau – Tischtennis</title>
-<script>
-// PWA Manifest
-const m={name:"FC Kollnau Tischtennis",short_name:"FCK TT",start_url:"./",display:"standalone",
-background_color:"#0a0a0a",theme_color:"#1a6b2e",orientation:"portrait",
-icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%231a6b2e'/><text x='96' y='130' text-anchor='middle' font-size='100'>🏓</text></svg>",sizes:"192x192",type:"image/svg+xml"}]};
-const bl=new Blob([JSON.stringify(m)],{type:"application/json"});
-const lk=document.createElement("link");lk.rel="manifest";lk.href=URL.createObjectURL(bl);
-document.head.appendChild(lk);
-</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a1628">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FC Kollnau TT">
+<title>FC Kollnau TT</title>
+<link rel="manifest" href="manifest.json">
+
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0a0a0a;--surf:#141414;--card:#1c1c1c;--brd:#2a2a2a;
-  --gr:#2a9d4a;--gd:#1a6b2e;--gg:rgba(42,157,74,0.14);--gb:rgba(42,157,74,0.38);
-  --re:#e53935;--rb:rgba(229,57,53,0.11);--rr:rgba(229,57,53,0.38);
-  --go:#f4c430;--wh:#ffffff;--gy:#888;--gd2:#3a3a3a;--tx:#efefef;--td:#777;--bl:#58a6ff;
-}
-html,body{background:var(--bg);color:var(--tx);font-family:-apple-system,'Segoe UI',sans-serif;font-size:15px;overscroll-behavior:none;height:100%}
-#app{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+  :root {
+    --bg:        #0a1628;
+    --bg2:       #111e35;
+    --bg3:       #1a2d4a;
+    --card:      #152238;
+    --accent:    #1db954;
+    --accent2:   #16a34a;
+    --gold:      #f59e0b;
+    --red:       #ef4444;
+    --text:      #e8edf5;
+    --text2:     #8ca0bc;
+    --border:    rgba(255,255,255,0.07);
+    --radius:    12px;
+    --safe-top:  env(safe-area-inset-top, 0px);
+    --safe-bot:  env(safe-area-inset-bottom, 0px);
+  }
 
-/* ── LOGIN SCREEN ── */
-.login-wrap{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:200;padding:24px}
-.login-box{width:100%;max-width:360px}
-.login-logo{text-align:center;margin-bottom:28px}
-.login-logo .icon{font-size:56px;display:block;margin-bottom:8px}
-.login-logo h1{font-size:24px;font-weight:900;color:var(--wh)}
-.login-logo p{font-size:13px;color:var(--gy);margin-top:4px}
-.login-field{margin-bottom:14px}
-.login-field label{display:block;font-size:12px;font-weight:700;color:var(--gy);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px}
-.login-field input{width:100%;background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:13px 14px;font-size:15px;color:var(--wh);outline:none;-webkit-appearance:none}
-.login-field input:focus{border-color:var(--gr)}
-.login-field input::placeholder{color:var(--td)}
-.login-btn{width:100%;padding:14px;background:var(--gr);border:none;border-radius:12px;color:var(--wh);font-size:16px;font-weight:800;cursor:pointer;margin-top:6px;-webkit-tap-highlight-color:transparent}
-.login-btn:active{opacity:.85}
-.login-btn:disabled{opacity:.5;cursor:not-allowed}
-.login-err{background:var(--rb);border:1px solid var(--rr);border-radius:10px;padding:12px;font-size:13px;color:var(--re);margin-top:12px;text-align:center}
-.login-note{font-size:11px;color:var(--td);text-align:center;margin-top:16px;line-height:1.5}
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-/* ── HEADER ── */
-.hdr{background:var(--surf);padding:14px 16px 12px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.hdr-l{display:flex;align-items:center;gap:10px}
-.hdr-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gd),var(--gr));display:flex;align-items:center;justify-content:center;font-size:18px}
-.hdr-t{font-size:15px;font-weight:800;color:var(--wh)}
-.hdr-s{font-size:11px;color:var(--gy)}
-.badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700}
-.badge-live{background:rgba(42,157,74,.15);border:1px solid var(--gr);color:var(--gr)}
-.badge-off{background:var(--card);border:1px solid var(--brd);color:var(--bl)}
-.badge-ld{background:var(--card);border:1px solid var(--brd);color:var(--gy)}
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    overscroll-behavior: none;
+  }
 
-/* ── CONTENT / NAV ── */
-.content{flex:1;overflow-y:auto;padding-bottom:76px}
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--surf);border-top:1px solid var(--brd);display:flex;padding:8px 0 14px;z-index:100}
-.nb{flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;-webkit-tap-highlight-color:transparent}
-.ni{font-size:21px;transition:filter .15s}
-.ni.dim{filter:grayscale(1) opacity(.28)}
-.nl{font-size:10px;font-weight:700}
-.nl.on{color:var(--gr)}
-.nl.off{color:var(--gd2)}
+  /* ── APP SHELL ── */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    position: relative;
+  }
 
-/* ── SECTIONS ── */
-.sec{margin-bottom:22px}
-.sec-t{padding:0 16px;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--gy);letter-spacing:1px;text-transform:uppercase}
-.card{background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:14px;margin:0 16px}
-.cf{background:var(--card);border:1px solid var(--brd);border-radius:14px;overflow:hidden;margin:0 16px}
+  /* ── TOP BAR ── */
+  #topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(12px + var(--safe-top)) 16px 12px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  #topbar-left { display: flex; align-items: center; gap: 10px; }
+  #topbar-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  #topbar-title { font-weight: 700; font-size: 15px; line-height: 1.1; }
+  #topbar-sub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  #live-badge {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(29,185,84,0.15); border: 1px solid rgba(29,185,84,0.3);
+    border-radius: 20px; padding: 4px 10px; font-size: 11px;
+    font-weight: 600; color: var(--accent);
+  }
+  #live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-/* ── HERO ── */
-.hero{margin:16px 16px 20px;border-radius:20px;overflow:hidden;position:relative;background:linear-gradient(160deg,var(--gd) 0%,#0f3d1a 60%,#050f08 100%);border:1px solid var(--gb)}
-.hero-chart{position:absolute;bottom:0;left:0;right:0;opacity:.3;pointer-events:none}
-.hero-c{position:relative;z-index:2;padding:20px 18px 16px}
-.hero-lbl{font-size:11px;color:rgba(255,255,255,.45);font-weight:700;letter-spacing:1px;margin-bottom:4px}
-.hero-ttr{font-size:64px;font-weight:900;line-height:1;letter-spacing:-3px;color:var(--wh)}
-.hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
-.hero-kpi{background:rgba(0,0,0,.38);border-radius:10px;padding:10px 4px;text-align:center;border:1px solid rgba(255,255,255,.06)}
-.hero-kv{font-size:24px;font-weight:900;line-height:1}
-.hero-kl{font-size:10px;color:rgba(255,255,255,.48);margin-top:3px}
+  /* ── CONTENT ── */
+  #content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  .tab-pane { display: none; padding: 16px 16px calc(16px + var(--safe-bot)); }
+  .tab-pane.active { display: block; }
 
-/* ── TABLE ── */
-.th{display:flex;padding:8px 12px;background:var(--surf);border-bottom:1px solid var(--brd);font-size:10px;color:var(--gy);font-weight:700}
-.tr{display:flex;align-items:center;padding:11px 12px;border-bottom:1px solid var(--brd)}
-.tr:last-child{border-bottom:none}
-.tr.own{background:var(--gg)}
-.tr.alt{background:rgba(255,255,255,.012)}
+  /* ── BOTTOM NAV ── */
+  #navbar {
+    display: flex;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding-bottom: var(--safe-bot);
+    flex-shrink: 0;
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 3px; padding: 10px 4px 8px; background: none; border: none;
+    color: var(--text2); font-size: 10px; font-weight: 500;
+    cursor: pointer; transition: color .2s; user-select: none;
+  }
+  .nav-btn svg { width: 22px; height: 22px; stroke-width: 1.8; transition: transform .15s; }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn.active svg { transform: scale(1.1); }
 
-/* ── STATS ── */
-.sg{display:flex;gap:8px;padding:0 16px;margin-bottom:8px}
-.sb{background:var(--surf);border:1px solid var(--brd);border-radius:12px;padding:12px 6px;text-align:center;flex:1}
-.sv{font-size:20px;font-weight:800;line-height:1}
-.sl{font-size:9px;color:var(--gy);margin-top:4px;line-height:1.3}
-.rec{display:flex;gap:8px}
-.rb2{flex:1;border-radius:10px;padding:10px 8px;text-align:center}
-.rb2.p{background:var(--gg);border:1px solid var(--gb)}
-.rb2.n{background:var(--rb);border:1px solid var(--rr)}
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text2);
+  }
+  .card-body { padding: 14px; }
 
-/* ── MATCH ── */
-.mc{padding:14px;margin:0 16px 8px;background:var(--card);border:1px solid var(--brd);border-radius:14px}
-.scb{width:94px;flex-shrink:0;border-radius:10px;padding:8px 0;text-align:center}
+  /* ── HERO TTR ── */
+  #hero {
+    background: linear-gradient(135deg, #0d1f3a 0%, #152238 50%, #0f2a1a 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 16px 16px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  #hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 80% 20%, rgba(29,185,84,.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  #hero-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-bottom: 6px; }
+  #hero-ttr { font-size: 52px; font-weight: 800; line-height: 1; color: var(--text); letter-spacing: -2px; }
+  #hero-ttr span { font-size: 16px; font-weight: 500; color: var(--text2); margin-left: 4px; letter-spacing: 0; vertical-align: middle; }
+  #hero-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  #hero-stats {
+    display: grid; grid-template-columns: repeat(4,1fr);
+    gap: 8px; margin-top: 16px;
+  }
+  .hero-stat {
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 6px;
+    text-align: center;
+  }
+  .hero-stat-val { font-size: 20px; font-weight: 700; line-height: 1; }
+  .hero-stat-val.green { color: var(--accent); }
+  .hero-stat-val.red   { color: var(--red); }
+  .hero-stat-val.gold  { color: var(--gold); }
+  .hero-stat-lbl { font-size: 10px; color: var(--text2); margin-top: 3px; }
 
-/* ── TOGGLE ── */
-.tog{display:flex;margin:0 16px 16px;background:var(--card);border-radius:10px;border:1px solid var(--brd);overflow:hidden}
-.tb{flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;-webkit-tap-highlight-color:transparent}
+  /* ── NEXT MATCH ── */
+  .next-match {
+    background: var(--bg3);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .next-match-date { text-align: center; min-width: 44px; }
+  .next-match-day { font-size: 22px; font-weight: 800; line-height: 1; color: var(--accent); }
+  .next-match-mon { font-size: 11px; color: var(--text2); }
+  .next-match-divider { width: 1px; height: 36px; background: var(--border); }
+  .next-match-info { flex: 1; }
+  .next-match-vs { font-size: 14px; font-weight: 600; }
+  .next-match-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+  .badge-home { background: rgba(29,185,84,.15); color: var(--accent); border: 1px solid rgba(29,185,84,.25); }
+  .badge-away { background: rgba(139,92,246,.15); color: #a78bfa; border: 1px solid rgba(139,92,246,.25); }
+  .badge-done { background: rgba(255,255,255,.07); color: var(--text2); border: 1px solid var(--border); }
 
-/* ── SCROLL ROW ── */
-.sr{display:flex;gap:8px;padding:0 16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.sr::-webkit-scrollbar{display:none}
-.sm{border-radius:12px;padding:10px 8px;min-width:88px;text-align:center;flex-shrink:0}
+  /* ── TABLE ── */
+  .league-table { width: 100%; border-collapse: collapse; }
+  .league-table th {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--text2); padding: 8px 10px;
+    text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .league-table th.num, .league-table td.num { text-align: right; }
+  .league-table td {
+    padding: 10px 10px; font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+  }
+  .league-table tr:last-child td { border-bottom: none; }
+  .league-table tr.my-team td { background: rgba(29,185,84,.06); }
+  .league-table tr.my-team td:first-child { border-left: 3px solid var(--accent); padding-left: 7px; }
+  .rank-num { font-size: 12px; font-weight: 700; color: var(--text2); min-width: 20px; }
+  .rank-num.top { color: var(--gold); }
+  .team-name { font-weight: 600; }
+  .team-name.mine { color: var(--accent); }
+  .pts { font-weight: 700; color: var(--text); }
+  .ratio { color: var(--text2); font-size: 12px; }
 
-/* ── PROFILE ── */
-.prof{margin:0 16px 18px;background:linear-gradient(135deg,var(--gd),#0f3d1a);border-radius:18px;padding:18px;border:1px solid var(--gb);display:flex;align-items:center;gap:14px}
-.av{width:60px;height:60px;border-radius:16px;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+  /* ── MATCHES LIST ── */
+  .match-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+  }
+  .match-item:last-child { border-bottom: none; }
+  .match-date-col { min-width: 38px; text-align: center; }
+  .match-date-d { font-size: 16px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .match-date-m { font-size: 10px; color: var(--text2); }
+  .match-teams { flex: 1; }
+  .match-teams strong { font-size: 13px; font-weight: 600; display: block; }
+  .match-teams span { font-size: 11px; color: var(--text2); margin-top: 1px; display: block; }
+  .match-result { text-align: right; min-width: 44px; }
+  .result-score { font-size: 15px; font-weight: 700; }
+  .result-win  { color: var(--accent); }
+  .result-loss { color: var(--red); }
+  .result-pending { color: var(--text2); font-size: 11px; }
 
-/* ── LOADING ── */
-.loading{text-align:center;padding:48px 20px;color:var(--gy)}
-.spin{width:32px;height:32px;border:3px solid var(--brd);border-top-color:var(--gr);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
-@keyframes sp{to{transform:rotate(360deg)}}
+  /* ── PLAYER BALANCES ── */
+  .player-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+  }
+  .player-row:last-child { border-bottom: none; }
+  .player-rank-badge {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--bg3); display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--text2); flex-shrink: 0;
+  }
+  .player-rank-badge.me { background: rgba(29,185,84,.2); color: var(--accent); border: 1px solid rgba(29,185,84,.3); }
+  .player-name { flex: 1; font-size: 13px; font-weight: 600; }
+  .player-name.me { color: var(--accent); }
+  .player-name small { font-size: 11px; color: var(--text2); font-weight: 400; margin-left: 4px; }
+  .player-wl { display: flex; gap: 6px; align-items: center; }
+  .wl-win { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .wl-sep { font-size: 11px; color: var(--text2); }
+  .wl-loss { font-size: 13px; font-weight: 700; color: var(--red); }
 
-/* ── MISC ── */
-.note{padding:6px 16px 0;font-size:10px;color:var(--gd2)}
-.ch-header{margin:0 16px 18px;background:linear-gradient(135deg,var(--gd),#0f3d1a);border-radius:18px;padding:18px;border:1px solid var(--gb);text-align:center}
+  /* ── SECTION HEADER ── */
+  .section-h {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--text2);
+    padding: 0 0 8px; margin: 16px 0 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-h:first-child { margin-top: 0; }
+
+  /* ── VEREIN TAB ── */
+  .club-teams-grid { display: flex; flex-direction: column; gap: 8px; }
+  .club-team-card {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg3); border-radius: 10px; padding: 12px 14px;
+  }
+  .club-team-rank {
+    font-size: 24px; font-weight: 800; color: var(--accent); min-width: 36px; text-align: center;
+  }
+  .club-team-info { flex: 1; }
+  .club-team-name { font-size: 14px; font-weight: 600; }
+  .club-team-liga { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .club-team-pts { text-align: right; }
+  .club-team-pts-val { font-size: 16px; font-weight: 700; color: var(--text); }
+  .club-team-pts-lbl { font-size: 10px; color: var(--text2); }
+
+  /* ── LOADING / EMPTY ── */
+  .loading {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 40px 20px; gap: 12px;
+  }
+  .spinner {
+    width: 28px; height: 28px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p { color: var(--text2); font-size: 13px; }
+
+  .empty { text-align: center; padding: 32px 20px; color: var(--text2); font-size: 13px; }
+
+  /* ── ICH TAB: TTR chart ── */
+  #ttr-chart-wrap {
+    width: 100%; height: 120px; position: relative; margin-top: 4px;
+  }
+  #ttr-canvas { width: 100%; height: 100%; }
+
+  /* ── REFRESH BTN ── */
+  .refresh-btn {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(255,255,255,.05); border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 12px; color: var(--text2);
+    font-size: 11px; cursor: pointer; transition: all .2s;
+  }
+  .refresh-btn:active { background: rgba(255,255,255,.1); }
+  .refresh-btn svg { width: 13px; height: 13px; }
+
+  /* ── UTIL ── */
+  .row { display: flex; align-items: center; justify-content: space-between; }
+  .mt8 { margin-top: 8px; }
+  .pill {
+    display: inline-flex; align-items: center; padding: 3px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 600;
+    background: var(--bg3); color: var(--text2);
+  }
 </style>
 </head>
 <body>
 <div id="app">
-  <div class="hdr">
-    <div class="hdr-l">
-      <div class="hdr-logo">🏓</div>
-      <div><div class="hdr-t">FC Kollnau</div><div class="hdr-s">TTBW · Kreisliga B · 25/26</div></div>
-    </div>
-    <div id="badge" class="badge badge-ld">⏳ Laden…</div>
-  </div>
-  <div class="content" id="content"><div class="loading"><div class="spin"></div>Wird geladen…</div></div>
-  <nav class="nav" id="nav"></nav>
-</div>
 
-<!-- LOGIN OVERLAY -->
-<div class="login-wrap" id="loginWrap" style="display:none">
-  <div class="login-box">
-    <div class="login-logo">
-      <span class="icon">🏓</span>
-      <h1>FC Kollnau TT</h1>
-      <p>Einmalige Verbindung mit myTischtennis</p>
-    </div>
-
-    <!-- Schritt 1: Button zum Öffnen von mytischtennis.de -->
-    <div id="loginStep1">
-      <p class="login-note" style="text-align:left;margin-bottom:12px">
-        <b>Schritt 1:</b> Öffne mytischtennis.de und logge dich ein.<br>
-        Danach komm zurück zu dieser App.
-      </p>
-      <button class="login-btn" style="background:#1a6b3c" onclick="window.open('https://www.mytischtennis.de','_blank');document.getElementById('loginStep1').style.display='none';document.getElementById('loginStep2').style.display='block'">
-        🌐 mytischtennis.de öffnen & einloggen
-      </button>
-    </div>
-
-    <!-- Schritt 2: Token eingeben -->
-    <div id="loginStep2" style="display:none">
-      <p class="login-note" style="text-align:left;margin-bottom:12px">
-        <b>Schritt 2:</b> Öffne auf mytischtennis.de die Browser-Konsole (F12 → Console) und füge ein:
-      </p>
-      <code style="display:block;background:#111;color:#4ade80;padding:8px;border-radius:6px;font-size:11px;margin-bottom:12px;word-break:break-all">
-        document.cookie.split(";").find(c=>c.includes("sb-10-a"))?.split("=").slice(1).join("=")
-      </code>
-      <p class="login-note" style="text-align:left;margin-bottom:8px">
-        <b>Schritt 3:</b> Kopiere den angezeigten Wert und füge ihn hier ein:
-      </p>
-      <div class="login-field">
-        <label>Token (base64-eyJ...)</label>
-        <input type="text" id="liToken" placeholder="base64-eyJ..." autocomplete="off" autocapitalize="off"/>
+  <!-- TOP BAR -->
+  <header id="topbar">
+    <div id="topbar-left">
+      <div id="topbar-icon">🏓</div>
+      <div>
+        <div id="topbar-title">FC Kollnau</div>
+        <div id="topbar-sub">TTBW · Kreisliga B · 25/26</div>
       </div>
-      <button class="login-btn" id="liBtn" onclick="doLoginToken()">✅ Token speichern & App starten</button>
-      <div id="liErr" style="display:none" class="login-err"></div>
-      <p style="margin-top:8px;font-size:11px;color:#888;text-align:center">
-        <a href="#" onclick="document.getElementById('loginStep1').style.display='block';document.getElementById('loginStep2').style.display='none';return false" style="color:#4ade80">← Zurück zu Schritt 1</a>
-      </p>
+    </div>
+    <div id="live-badge">
+      <div id="live-dot"></div>
+      <span id="live-time">--:--</span>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main id="content">
+
+    <!-- HOME -->
+    <div id="tab-home" class="tab-pane active">
+      <!-- TTR Hero -->
+      <div id="hero">
+        <div id="hero-label">Mein TTR-Wert · Markus Reiß</div>
+        <div id="hero-ttr"><span id="ttr-val">—</span><span id="ttr-label">diese Saison</span></div>
+        <div id="hero-sub" style="display:none"></div>
+        <div id="hero-stats">
+          <div class="hero-stat">
+            <div class="hero-stat-val green" id="stat-wins">—</div>
+            <div class="hero-stat-lbl">Siege</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-val red" id="stat-losses">—</div>
+            <div class="hero-stat-lbl">Niederl.</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-val" id="stat-quote">—</div>
+            <div class="hero-stat-lbl">Quote</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-val gold" id="stat-rank">—</div>
+            <div class="hero-stat-lbl">Tabelle</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nächstes Spiel -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Nächstes Spiel</span>
+          <button class="refresh-btn" onclick="loadAll()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            Neu laden
+          </button>
+        </div>
+        <div class="card-body" id="next-match-wrap">
+          <div class="loading"><div class="spinner"></div><p>Lade Spiele…</p></div>
+        </div>
+      </div>
+
+      <!-- Mini-Tabelle -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Tabelle · Kreisliga B</span></div>
+        <div class="card-body" style="padding: 0 0 2px" id="mini-table-wrap">
+          <div class="loading"><div class="spinner"></div><p>Lade Tabelle…</p></div>
+        </div>
+      </div>
+
+      <!-- Letzte Begegnungen -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Letzte Begegnungen</span></div>
+        <div class="card-body" id="recent-matches-wrap">
+          <div class="loading"><div class="spinner"></div><p>Lade Begegnungen…</p></div>
+        </div>
+      </div>
+    </div><!-- /tab-home -->
+
+    <!-- TABELLE -->
+    <div id="tab-tabelle" class="tab-pane">
+      <div class="card" style="margin-top:4px">
+        <div class="card-header">
+          <span class="card-title">Kreisliga B Gruppe 2</span>
+          <span class="pill">Saison 25/26</span>
+        </div>
+        <div style="padding:0 0 4px" id="full-table-wrap">
+          <div class="loading"><div class="spinner"></div><p>Lade Tabelle…</p></div>
+        </div>
+      </div>
     </div>
 
-    <!-- versteckte Felder damit der alte doLogin Code nicht bricht -->
-    <input type="hidden" id="liUser"/>
-    <input type="hidden" id="liPass"/>
-  </div>
-</div>
+    <!-- VEREIN -->
+    <div id="tab-verein" class="tab-pane">
+      <div class="card" style="margin-top:4px">
+        <div class="card-header"><span class="card-title">FC Kollnau · Mannschaften</span></div>
+        <div class="card-body" id="club-teams-wrap">
+          <div class="loading"><div class="spinner"></div><p>Lade Vereinsdaten…</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPIELE -->
+    <div id="tab-spiele" class="tab-pane">
+      <div class="card" style="margin-top:4px">
+        <div class="card-header">
+          <span class="card-title">FC Kollnau III · Spielplan</span>
+        </div>
+        <div class="card-body" id="schedule-wrap">
+          <div class="loading"><div class="spinner"></div><p>Lade Spielplan…</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ICH -->
+    <div id="tab-ich" class="tab-pane">
+      <!-- TTR Card -->
+      <div class="card" style="margin-top:4px">
+        <div class="card-header"><span class="card-title">Mein TTR · Markus Reiß</span></div>
+        <div class="card-body">
+          <div id="my-ttr-display" style="font-size:42px;font-weight:800;letter-spacing:-1px;color:var(--text)">—</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">Letzter bekannter TTR (aus Click-TT)</div>
+        </div>
+      </div>
+
+      <!-- Meine Statistik -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Saisonbilanz</span></div>
+        <div class="card-body" id="my-stats-wrap">
+          <div class="loading"><div class="spinner"></div><p>Lade Statistik…</p></div>
+        </div>
+      </div>
+
+      <!-- Alle Spieler der Mannschaft -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">FC Kollnau III · Spielerbilanzen</span></div>
+        <div class="card-body" id="player-balances-wrap">
+          <div class="loading"><div class="spinner"></div><p>Lade Bilanzen…</p></div>
+        </div>
+      </div>
+
+      <!-- Aufstellung -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Gemeldete Aufstellung</span></div>
+        <div class="card-body" id="team-players-wrap">
+          <div class="loading"><div class="spinner"></div><p>Lade Aufstellung…</p></div>
+        </div>
+      </div>
+    </div>
+
+  </main><!-- /content -->
+
+  <!-- BOTTOM NAV -->
+  <nav id="navbar">
+    <button class="nav-btn active" onclick="switchTab('home',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </button>
+    <button class="nav-btn" onclick="switchTab('tabelle',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      Tabelle
+    </button>
+    <button class="nav-btn" onclick="switchTab('verein',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Verein
+    </button>
+    <button class="nav-btn" onclick="switchTab('spiele',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Spiele
+    </button>
+    <button class="nav-btn" onclick="switchTab('ich',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Ich
+    </button>
+  </nav>
+
+</div><!-- /app -->
 
 <script>
-// ═══════════════════════════════════════════════
-//  KONFIGURATION
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════
 const CFG = {
-  nuid:       "P15B8F81E",
-  clubNr:     "2062050",
-  gruppeId:   "494633",
-  teamId:     "2960786",
-  assoc:      "TTBW",
-  season:     "25--26",
-  teamSlug:   "FC_Kollnau_III",
-  leagueSlug: "Erwachsene_Kreisliga_B_Gruppe_2",
-  teamName:   "FC Kollnau III",
+  proxy:      'https://fckollnau-tt-proxy.vercel.app/api/proxy',
+  clubNr:     '22036',
+  org:        'TTBW',
+  teamId:     '2960786',
+  groupId:    '494633',
+  season:     '25--26',
+  myName:     'Reiß',  // match by lastname
+  myNUID:     'P15B8F81E',
+  assoc:      'TTBW',
 };
 
-const BASE = "https://www.mytischtennis.de";
-
-// ── SUPABASE AUTH KONFIGURATION ───────────────
-const SUPA_URL = "https://supabase.mytischtennis.de";
-const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzYiIsInJvbGUiOiJhbm9uIiwiZXhwIjo5OTk5OTk5OTk5fQ.uuv5nJLBPFYbi2gSnxzPZ1jOPwV9rDZKTKBQDFAhXnE";
-
-// ── PROXY KONFIGURATION ──────────────────────
-// Trage hier deine Vercel-URL ein nach dem Deploy, z.B.:
-// const PROXY = "https://fckollnau-tt-proxy.vercel.app";
-const PROXY = "https://fckollnau-tt-proxy.vercel.app";
-
-// Alle API-Calls laufen über den Proxy
-function proxyUrl(url) {
-  if (PROXY === "DEINE_VERCEL_URL_HIER") return url; // Fallback: direkt (schlägt wegen CORS fehl)
-  return `${PROXY}/api/proxy?url=${encodeURIComponent(url)}`;
+// ═══════════════════════════════════════════════════════════
+//  PROXY FETCH  (routes all requests through your Vercel proxy)
+// ═══════════════════════════════════════════════════════════
+async function apiFetch(path, params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  const fullUrl = `https://www.mytischtennis.de${path}${qs ? '?' + qs : ''}`;
+  const proxyUrl = `${CFG.proxy}?url=${encodeURIComponent(fullUrl)}`;
+  const res = await fetch(proxyUrl);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
-// Keine statischen Fallback-Daten – App zeigt nur echte API-Daten
-
-// ═══════════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════════
-let S = {
-  tab:"home", spielView:"upcoming",
-  loggedIn:false, authToken:null, refreshToken:null,
-  ttr: null,
-  ttrDiff: null,
-  ttrHistory: [],
-  myGames: [],
-  standings: [],
-  upcoming: [],
-  clubRanking: [],
-  allTeams: [],
-  wins: 0,
-  losses: 0,
-  apiStatus:"loading",
-  lastUpdate:null,
-  playerName:"Markus Reiß",
-};
-
-// ═══════════════════════════════════════════════
-//  AUTH / LOGIN
-// ═══════════════════════════════════════════════
-function loadSaved(){
-  try{
-    const t=localStorage.getItem("mytt_token");
-    const u=localStorage.getItem("mytt_user");
-    const r=localStorage.getItem("mytt_refresh");
-    if(r) S.refreshToken=r;
-    if(t){S.authToken=t;S.loggedIn=true;S.playerName=u||"Markus Reiß";return true;}
-    // Wenn kein access token aber refresh token vorhanden → refresh versuchen
-    if(r) return "refresh";
-  }catch(e){}
-  return false;
-}
-function saveAuth(token,user,refresh){
-  try{
-    localStorage.setItem("mytt_token",token);
-    localStorage.setItem("mytt_user",user);
-    if(refresh) localStorage.setItem("mytt_refresh",refresh);
-  }catch(e){}
-}
-function logout(){
-  try{
-    localStorage.removeItem("mytt_token");
-    localStorage.removeItem("mytt_user");
-    localStorage.removeItem("mytt_refresh");
-  }catch(e){}
-  S.loggedIn=false;S.authToken=null;S.refreshToken=null;
-  document.getElementById("loginWrap").style.display="flex";
+// ═══════════════════════════════════════════════════════════
+//  NAV
+// ═══════════════════════════════════════════════════════════
+const loaded = {};
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (!loaded[name]) { loaded[name] = true; loadTab(name); }
 }
 
-async function doLogin(){
-  const u=document.getElementById("liUser").value.trim();
-  const p=document.getElementById("liPass").value;
-  const btn=document.getElementById("liBtn");
-  const err=document.getElementById("liErr");
-  if(!u||!p){showErr("Bitte Benutzername und Passwort eingeben.");return;}
-  btn.disabled=true;btn.textContent="Anmelden…";
-  err.style.display="none";
-  try{
-    // Login über Vercel-Proxy (server-seitig, umgeht Supabase CORS/Origin-Check)
-    if(!PROXY||PROXY==="DEINE_VERCEL_URL_HIER"){showErr("Bitte zuerst die Vercel-URL in der App eintragen.");btn.disabled=false;btn.textContent="Anmelden & App starten";return;}
-    const resp=await fetch(`${PROXY}/api/proxy?action=login`,{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Accept":"application/json"},
-      body:JSON.stringify({email:u,password:p}),
-    });
-    const data=await resp.json().catch(()=>({}));
-    const token=data?.access_token||null;
-    if(resp.ok&&token){
-      const refresh=data?.refresh_token||null;
-      S.authToken=token;S.refreshToken=refresh;S.loggedIn=true;S.playerName=u;
-      saveAuth(token,u,refresh);
-      document.getElementById("loginWrap").style.display="none";
-      await loadAllData();
-    } else {
-      const msg=data?.error_description||data?.msg||data?.message||data?.error||"Login fehlgeschlagen. Bitte E-Mail und Passwort prüfen.";
-      showErr(msg);
-    }
-  }catch(e){
-    showErr("Verbindungsfehler: "+e.message);
-  }finally{
-    btn.disabled=false;btn.textContent="Anmelden & App starten";
+// ═══════════════════════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════════════════════
+function startClock() {
+  const el = document.getElementById('live-time');
+  const tick = () => {
+    const now = new Date();
+    el.textContent = now.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+  };
+  tick();
+  setInterval(tick, 30000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════
+function fmtDate(iso) {
+  if (!iso) return {d:'?', m:'?', full:'?'};
+  const dt = new Date(iso);
+  const d = dt.getDate().toString().padStart(2,'0');
+  const m = dt.toLocaleString('de-DE', {month:'short'});
+  const time = dt.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+  return {d, m, full:`${d}. ${m} · ${time} Uhr`};
+}
+
+function isMyTeamHome(meeting) {
+  return (meeting.team_home_id || '') == CFG.teamId;
+}
+
+function getOpponent(meeting) {
+  return isMyTeamHome(meeting) ? meeting.team_away : meeting.team_home;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOAD TABELLE
+// ═══════════════════════════════════════════════════════════
+let tableData = null;
+
+async function loadTable() {
+  const _data = 'routes/click-tt+/$association+/$season+/$type+/$groupname.gruppe.$urlid+/tabelle.$filter';
+  const data = await apiFetch(
+    `/click-tt/${CFG.assoc}/${CFG.season}/ligen/x/gruppe/${CFG.groupId}/tabelle/gesamt`,
+    { _data }
+  );
+  return data;
+}
+
+function renderMiniTable(data) {
+  const rows = data?.data?.league_table || [];
+  if (!rows.length) { document.getElementById('mini-table-wrap').innerHTML = '<div class="empty">Keine Tabellendaten</div>'; return; }
+
+  // find my team rank
+  const myRow = rows.find(r => r.team_id == CFG.teamId);
+  const myRank = myRow?.table_rank || 0;
+  document.getElementById('stat-rank').textContent = myRank ? `#${myRank}` : '—';
+
+  // show 3 around my team (or first 5)
+  let slice = rows;
+  if (myRank) {
+    const idx = rows.findIndex(r => r.team_id == CFG.teamId);
+    const start = Math.max(0, idx - 1);
+    const end = Math.min(rows.length, idx + 3);
+    slice = rows.slice(start, end);
+  } else {
+    slice = rows.slice(0, 5);
   }
-}
-async function doLoginToken(){
-  const raw=document.getElementById("liToken").value.trim();
-  const btn=document.getElementById("liBtn");
-  if(!raw){document.getElementById("liErr").textContent="Bitte Token einfügen.";document.getElementById("liErr").style.display="block";return;}
-  btn.disabled=true;btn.textContent="Wird gespeichert…";
-  try{
-    // Token dekodieren: base64-eyJ... → JSON
-    let jsonStr;
-    if(raw.startsWith("base64-")){
-      jsonStr=atob(raw.slice(7));
-    } else {
-      jsonStr=atob(raw);
-    }
-    const obj=JSON.parse(jsonStr);
-    const accessToken=obj?.access_token||null;
-    const refreshToken=obj?.refresh_token||null;
-    const email=obj?.user?.email||"Markus Reiß";
-    if(!accessToken){throw new Error("Kein access_token im Token gefunden.");}
-    S.authToken=accessToken;
-    S.refreshToken=refreshToken;
-    S.loggedIn=true;
-    S.playerName=email;
-    saveAuth(accessToken,email,refreshToken);
-    document.getElementById("loginWrap").style.display="none";
-    await loadAllData();
-  }catch(e){
-    document.getElementById("liErr").textContent="Ungültiger Token: "+e.message;
-    document.getElementById("liErr").style.display="block";
-    btn.disabled=false;btn.textContent="✅ Token speichern & App starten";
-  }
+
+  const html = `<table class="league-table">
+    <thead><tr><th></th><th>Mannschaft</th><th class="num">Pkt</th><th class="num">S:N</th></tr></thead>
+    <tbody>
+    ${slice.map(r => {
+      const isMe = r.team_id == CFG.teamId;
+      return `<tr class="${isMe ? 'my-team' : ''}">
+        <td><span class="rank-num ${r.table_rank <= 2 ? 'top' : ''}">${r.table_rank}.</span></td>
+        <td class="team-name ${isMe ? 'mine' : ''}">${r.team_name}${isMe ? ' 🏓' : ''}</td>
+        <td class="num pts">${r.points_won}:${r.points_lost}</td>
+        <td class="num ratio">${r.meetings_won}:${r.meetings_lost}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>`;
+  document.getElementById('mini-table-wrap').innerHTML = html;
 }
 
-async function refreshAccessToken(){
-  if(!S.refreshToken) return false;
-  try{
-    const resp=await fetch(`${PROXY}/api/proxy?action=refresh`,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({refresh_token:S.refreshToken}),
-    });
-    const data=await resp.json().catch(()=>({}));
-    if(resp.ok&&data?.access_token){
-      S.authToken=data.access_token;
-      if(data.refresh_token) S.refreshToken=data.refresh_token;
-      saveAuth(data.access_token, S.playerName, data.refresh_token||S.refreshToken);
-      return true;
-    }
-  }catch(e){}
-  return false;
+function renderFullTable(data) {
+  const rows = data?.data?.league_table || [];
+  if (!rows.length) { document.getElementById('full-table-wrap').innerHTML = '<div class="empty" style="padding:20px">Keine Daten</div>'; return; }
+
+  const html = `<table class="league-table">
+    <thead><tr>
+      <th></th>
+      <th>Mannschaft</th>
+      <th class="num">Pkt</th>
+      <th class="num">S:U:N</th>
+      <th class="num">Spiele</th>
+    </tr></thead>
+    <tbody>
+    ${rows.map(r => {
+      const isMe = r.team_id == CFG.teamId;
+      return `<tr class="${isMe ? 'my-team' : ''}">
+        <td><span class="rank-num ${r.table_rank <= 2 ? 'top' : ''}">${r.table_rank}.</span></td>
+        <td class="team-name ${isMe ? 'mine' : ''}">${r.team_name}${isMe ? ' 🏓' : ''}</td>
+        <td class="num pts">${r.points_won}:${r.points_lost}</td>
+        <td class="num ratio">${r.meetings_won}:${r.meetings_tie}:${r.meetings_lost}</td>
+        <td class="num ratio">${r.matches_won}:${r.matches_lost}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>`;
+  document.getElementById('full-table-wrap').innerHTML = html;
 }
 
-function showErr(msg){
-  const e=document.getElementById("liErr");
-  e.textContent=msg;e.style.display="block";
-}
+// ═══════════════════════════════════════════════════════════
+//  LOAD SCHEDULE (team schedule)
+// ═══════════════════════════════════════════════════════════
+let scheduleData = null;
 
-// ═══════════════════════════════════════════════
-//  API CALLS
-// ═══════════════════════════════════════════════
-function headers(){
-  const h={"Accept":"application/json","Content-Type":"application/json","apikey":SUPA_KEY};
-  if(S.authToken&&S.authToken!=="session") h["Authorization"]=`Bearer ${S.authToken}`;
-  return h;
-}
-
-async function apiFetch(url,opts={}){
-  const r=await fetch(proxyUrl(url),{...opts,headers:{...headers(),...(opts.headers||{})}});
-  if(r.status===401){
-    // Token abgelaufen → refresh versuchen
-    const refreshed=await refreshAccessToken();
-    if(refreshed){
-      const r2=await fetch(proxyUrl(url),{...opts,headers:{...headers(),...(opts.headers||{})}});
-      if(!r2.ok) throw new Error(`HTTP ${r2.status}`);
-      return r2.json();
-    }
-  }
-  if(!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-
-async function loadAllData(){
-  S.apiStatus="loading";setBadge();
-  renderNav();render();
-  let ok=false;
-  await Promise.allSettled([
-    loadTTR().then(()=>{ok=true}),
-    loadTTRHistory().then(()=>{ok=true}),
-    loadStandings().then(()=>{ok=true}),
-    loadSchedule().then(()=>{ok=true}),
-    loadMyGames().then(()=>{ok=true}),
-  ]);
-  S.apiStatus=ok?"ok":"fallback";
-  S.lastUpdate=new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
-  setBadge();render();
-}
-
-async function loadTTR(){
-  // GET /api/ttr/{nuid} – aktueller TTR-Wert (Auth erforderlich)
-  const d=await apiFetch(`${BASE}/api/ttr/${CFG.nuid}`);
-  if(d?.ttr!=null&&!d?.error){
-    S.ttr=d.ttr;
-    if(d.ttr_diff!=null) S.ttrDiff=d.ttr_diff;
-  }
-}
-
-async function loadTTRHistory(){
-  // GET /api/ttr/history/{nuid} – TTR-Historie (Auth erforderlich)
-  const d=await apiFetch(`${BASE}/api/ttr/history/${CFG.nuid}`);
-  if(d&&!d?.error){
-    // Response-Struktur: {ttr, events:[{date, ttr_before, ttr_after, opponent_name, result, ...}]}
-    if(d.ttr!=null) S.ttr=d.ttr;
-    const events=d.events||d.event||[];
-    const hist=events.filter(e=>e.ttr_after!=null).map(e=>e.ttr_after);
-    if(hist.length>0) S.ttrHistory=hist;
-    const games=events.filter(e=>e.opponent_name||e.name).map(e=>({
-      date:e.date||e.matchDate||"",
-      opp:e.opponent_name||e.name||"",
-      res:e.result||"",
-      ttrBefore:e.ttr_before||0,
-      ttrAfter:e.ttr_after||0,
-      ttrDiff:(e.ttr_after||0)-(e.ttr_before||0),
-      won:e.won===true||e.result==="W"||e.result==="win",
-    }));
-    if(games.length>0) S.myGames=games;
-  }
-}
-
-async function loadMyGames(){
-  // Match-Statistiken (benötigt Auth)
-  try{
-    const d=await apiFetch(`${BASE}/api/statistics/${CFG.nuid}/matches/current_season`);
-    if(d?.data&&!d?.data?.error&&d?.data?.matches){
-      const m=d.data.matches;
-      S.wins=m.wins||0;
-      S.losses=m.losses||0;
-    }
-  }catch(e){/* Auth-Fehler ignorieren, Fallback bleibt */}
-}
-
-async function loadStandings(){
-  const url=`${BASE}/click-tt/${CFG.assoc}/${CFG.season}/ligen/${CFG.leagueSlug}/gruppe/${CFG.gruppeId}/tabelle/gesamt`;
-  const r=await fetch(proxyUrl(url));
-  if(!r.ok) throw new Error("standings failed");
-  const html=await r.text();
-  const parsed=parseTable(html);
-  if(parsed&&parsed.length>=4) S.standings=parsed;
-}
-
-async function loadSchedule(){
-  const url=`${BASE}/click-tt/${CFG.assoc}/${CFG.season}/ligen/${CFG.leagueSlug}/gruppe/${CFG.gruppeId}/mannschaft/${CFG.teamId}/${CFG.teamSlug}/spielplan/gesamt`;
-  const r=await fetch(proxyUrl(url));
-  if(!r.ok) throw new Error("schedule failed");
-  const html=await r.text();
-  const upcoming=parseSchedule(html);
-  if(upcoming&&upcoming.length>0) S.upcoming=upcoming;
-}
-
-function parseTable(html){
-  try{
-    const doc=new DOMParser().parseFromString(html,"text/html");
-    const rows=doc.querySelectorAll("table tr");
-    const res=[];
-    rows.forEach((row,i)=>{
-      if(i===0)return;
-      const cells=row.querySelectorAll("td");
-      if(cells.length<5)return;
-      const name=(cells[1]?.textContent||"").trim();
-      if(!name)return;
-      const pts=(cells[cells.length-1]?.textContent||"").trim();
-      const beg=parseInt(cells[2]?.textContent)||0;
-      const s=parseInt(cells[3]?.textContent)||0;
-      const u=parseInt(cells[4]?.textContent)||0;
-      const n=parseInt(cells[5]?.textContent)||0;
-      res.push({rank:res.length+1,name,beg,s,u,n,pts,isOwn:name.includes("Kollnau III")});
-    });
-    return res.length>0?res:null;
-  }catch(e){return null;}
-}
-
-function parseSchedule(html){
-  try{
-    const doc=new DOMParser().parseFromString(html,"text/html");
-    const rows=doc.querySelectorAll("table tr");
-    const upcoming=[];
-    rows.forEach(row=>{
-      const cells=row.querySelectorAll("td");
-      if(cells.length<4)return;
-      const dateCell=(cells[0]?.textContent||"").trim();
-      const timeCell=(cells[1]?.textContent||"").trim();
-      const homeCell=(cells[3]?.textContent||"").trim();
-      const awayCell=(cells[4]?.textContent||"").trim();
-      const scoreCell=(cells[5]?.textContent||"").trim();
-      if(!dateCell||!homeCell||!awayCell)return;
-      // Only future/unplayed games
-      if(!scoreCell||scoreCell==="-:-"){
-        upcoming.push({date:dateCell,time:timeCell,home:homeCell,away:awayCell,loc:""});
-      }
-    });
-    return upcoming.length>0?upcoming:null;
-  }catch(e){return null;}
-}
-
-function setBadge(){
-  const b=document.getElementById("badge");if(!b)return;
-  if(S.apiStatus==="ok"){
-    b.className="badge badge-live";b.textContent=`🟢 Live ${S.lastUpdate||""}`;
-  }else if(S.apiStatus==="fallback"){
-    b.className="badge badge-off";b.textContent="📋 Offline";
-  }else{
-    b.className="badge badge-ld";b.textContent="⏳ Laden…";
-  }
-}
-
-// ═══════════════════════════════════════════════
-//  SVG CHART
-// ═══════════════════════════════════════════════
-function chart(vals,w,h,dimmed=false){
-  if(!vals||vals.length<2)return"";
-  const mn=Math.min(...vals)-8,mx=Math.max(...vals)+8;
-  const pl=4,pr=32,pt=6,pb=4,W=w-pl-pr,H=h-pt-pb;
-  const px=i=>pl+(i/(vals.length-1))*W;
-  const py=v=>pt+H-((v-mn)/(mx-mn))*H;
-  const d=vals.map((v,i)=>`${i===0?"M":"L"} ${px(i).toFixed(1)} ${py(v).toFixed(1)}`).join(" ");
-  const area=d+` L ${px(vals.length-1).toFixed(1)} ${(pt+H).toFixed(1)} L ${px(0).toFixed(1)} ${(pt+H).toFixed(1)} Z`;
-  const lx=px(vals.length-1),ly=py(vals[vals.length-1]);
-  return `<svg width="100%" viewBox="0 0 ${w} ${h}" style="display:block;overflow:visible">
-    <defs><linearGradient id="cg${w}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#2a9d4a" stop-opacity="${dimmed?.2:.4}"/>
-      <stop offset="100%" stop-color="#2a9d4a" stop-opacity=".02"/>
-    </linearGradient></defs>
-    <path d="${area}" fill="url(#cg${w})"/>
-    <path d="${d}" fill="none" stroke="${dimmed?"rgba(42,157,74,.5)":"#2a9d4a"}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${px(0).toFixed(1)}" cy="${py(vals[0]).toFixed(1)}" r="3" fill="#555"/>
-    <circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="5" fill="#2a9d4a" stroke="#0a0a0a" stroke-width="2"/>
-    <text x="${(lx+7).toFixed(1)}" y="${(ly+4).toFixed(1)}" fill="#2a9d4a" font-size="12" font-weight="800">${vals[vals.length-1]}</text>
-    <text x="${(px(0)-2).toFixed(1)}" y="${(py(vals[0])+4).toFixed(1)}" fill="#666" font-size="10" text-anchor="end">${vals[0]}</text>
-  </svg>`;
-}
-
-// ═══════════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════════
-const TABS=[
-  {id:"home",lbl:"Home",ic:"⊞"},
-  {id:"tabelle",lbl:"Tabelle",ic:"≡"},
-  {id:"verein",lbl:"Verein",ic:"◈"},
-  {id:"spiele",lbl:"Spiele",ic:"▶"},
-  {id:"ich",lbl:"Ich",ic:"◉"},
-];
-function renderNav(){
-  const nav=document.getElementById("nav");if(!nav)return;
-  nav.innerHTML=TABS.map(t=>`<button class="nb" data-tab="${t.id}">
-    <span class="ni${t.id!==S.tab?" dim":""}">${t.ic}</span>
-    <span class="nl ${t.id===S.tab?"on":"off"}">${t.lbl}</span>
-  </button>`).join("");
-}
-function render(){
-  const c=document.getElementById("content");if(!c)return;
-  switch(S.tab){
-    case"home":    c.innerHTML=renderHome();break;
-    case"tabelle": c.innerHTML=renderTabelle();break;
-    case"verein":  c.innerHTML=renderVerein();break;
-    case"spiele":  c.innerHTML=renderSpiele();break;
-    case"ich":     c.innerHTML=renderIch();break;
-  }
-  attachHandlers();
-}
-
-// ── HOME ──────────────────────────────────────
-function renderHome(){
-  const g=S.myGames;
-  const wins=S.wins||g.filter(x=>x.won).length;
-  const losses=S.losses||g.filter(x=>!x.won).length;
-  const total=wins+losses;
-  const pct=total>0?Math.round((wins/total)*100):0;
-  const diff=S.ttrDiff!=null?S.ttrDiff:(S.ttrHistory.length>1?S.ttrHistory[S.ttrHistory.length-1]-S.ttrHistory[0]:null);
-  const sign=diff!=null&&diff>=0?"+":"";
-  const myRank=S.standings.find(t=>t.isOwn);
-  const next=S.upcoming[0];
-  return `<div style="padding-top:16px">
-  <div class="hero">
-    <div class="hero-chart">${S.ttrHistory.length>1?chart(S.ttrHistory,400,100,true):""}</div>
-    <div class="hero-c">
-      <div class="hero-lbl">MEIN TTR-WERT · ${S.playerName.toUpperCase()}</div>
-      <div style="display:flex;align-items:flex-end;gap:12px;margin-bottom:4px">
-        <div class="hero-ttr">${S.ttr!=null?S.ttr:"–"}</div>
-        <div style="margin-bottom:12px">
-          <div style="font-size:18px;font-weight:800;color:${diff==null?"#666":diff>=0?"#2a9d4a":"#e53935"}">${diff!=null?sign+diff:"–"}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.4)">diese Saison</div>
-        </div>
-      </div>
-      <div class="hero-grid">
-        <div class="hero-kpi"><div class="hero-kv" style="color:#2a9d4a">${wins||"–"}</div><div class="hero-kl">Siege</div></div>
-        <div class="hero-kpi"><div class="hero-kv" style="color:#e53935">${losses||"–"}</div><div class="hero-kl">Niederl.</div></div>
-        <div class="hero-kpi"><div class="hero-kv" style="color:#58a6ff">${total>0?pct+"%" :"–"}</div><div class="hero-kl">Quote</div></div>
-        <div class="hero-kpi"><div class="hero-kv" style="color:#f4c430">${myRank?"#"+myRank.rank:"–"}</div><div class="hero-kl">Tabelle</div></div>
-      </div>
-    </div>
-  </div>
-  ${next?`<div class="sec"><div class="sec-t">Nächstes Spiel</div>
-  <div class="card">
-    <div style="font-size:11px;color:#58a6ff;font-weight:700;margin-bottom:8px">📅 ${next.date}${next.time?" · "+next.time+" Uhr":""}</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <div style="flex:1;font-size:14px;font-weight:700;text-align:right">${next.home}</div>
-      <div style="background:#2a2a2a;border-radius:6px;padding:3px 8px;font-size:11px;color:#888;font-weight:800">VS</div>
-      <div style="flex:1;font-size:14px;font-weight:700">${next.away}</div>
-    </div>
-    ${next.loc?`<div style="font-size:11px;color:#888;padding-top:8px;border-top:1px solid #2a2a2a">📍 ${next.loc}</div>`:""}
-  </div></div>`:""}
-  <div class="sec"><div class="sec-t">Tabelle · Kreisliga B</div>
-  <div class="cf">${S.standings.length===0
-    ?`<div style="text-align:center;padding:24px;color:#666;font-size:13px">Tabelle wird geladen…</div>`
-    :S.standings.slice(0,7).map((t,i,arr)=>`
-    <div class="tr${t.isOwn?" own":""}" style="${i===arr.length-1?"border-bottom:none":""}">
-      <div style="width:24px;font-size:12px;font-weight:700;color:${t.isOwn?"#2a9d4a":"#3a3a3a"}">${t.rank}.</div>
-      <div style="flex:1;font-size:13px;font-weight:${t.isOwn?700:400}">${t.name}${t.isOwn?" 🏓":""}</div>
-      <div style="font-size:13px;font-weight:700;color:${t.isOwn?"#2a9d4a":"#aaa"}">${t.pts}</div>
-    </div>`).join("")}
-  </div></div>
-  <div class="sec"><div class="sec-t">Letzte Begegnungen</div>
-  <div class="sr">${g.length===0
-    ?`<div style="text-align:center;padding:24px;color:#666;font-size:13px;width:100%">Keine Begegnungen geladen</div>`
-    :[...g].reverse().slice(0,6).map(x=>`
-    <div class="sm" style="background:${x.won?"rgba(42,157,74,.12)":"rgba(229,57,53,.1)"};border:1px solid ${x.won?"rgba(42,157,74,.38)":"rgba(229,57,53,.38)"}">
-      <div style="font-size:10px;color:#888;margin-bottom:3px">${(x.date||"").slice(0,5)}</div>
-      <div style="font-size:17px;font-weight:800;color:${x.won?"#2a9d4a":"#e53935"}">${x.res||"–"}</div>
-      <div style="font-size:10px;color:#888;margin-top:3px">${x.opp||"–"}</div>
-      <div style="font-size:11px;font-weight:700;color:${(x.d||x.ttrDiff||0)>0?"#2a9d4a":"#e53935"};margin-top:2px">${(x.d||x.ttrDiff||0)>0?"+":""}${x.d||x.ttrDiff||0}</div>
-    </div>`).join("")}
-  </div></div>
-  ${S.lastUpdate?`<div class="note">🔄 ${S.lastUpdate}</div>`:""}
-  <div style="height:8px"></div></div>`;
-}
-
-// ── TABELLE ───────────────────────────────────
-function renderTabelle(){
-  return `<div style="padding-top:16px">
-  <div class="sec"><div class="sec-t">Kreisliga B – Gruppe 2 · 25/26</div>
-  <div class="cf">
-    <div class="th">
-      <div style="width:24px">#</div><div style="flex:1">Mannschaft</div>
-      <div style="width:26px;text-align:center">Sp</div>
-      <div style="width:22px;text-align:center;color:#2a9d4a">S</div>
-      <div style="width:22px;text-align:center">U</div>
-      <div style="width:22px;text-align:center;color:#e53935">N</div>
-      <div style="width:44px;text-align:right">Pkt</div>
-    </div>
-    ${S.standings.length===0
-      ?`<div style="text-align:center;padding:32px;color:#666;font-size:13px">Tabelle wird geladen…</div>`
-      :S.standings.map((t,i)=>`
-    <div class="tr${t.isOwn?" own":""}${!t.isOwn&&i%2===0?" alt":""}">
-      <div style="width:24px;font-size:13px;font-weight:700;color:${t.rank===1?"#f4c430":t.rank>=8?"#e53935":t.isOwn?"#2a9d4a":"#3a3a3a"}">${t.rank}.</div>
-      <div style="flex:1;font-size:13px;font-weight:${t.isOwn?700:400}">${t.name}${t.isOwn?" ◀":""}</div>
-      <div style="width:26px;text-align:center;font-size:11px;color:#666">${t.beg||"–"}</div>
-      <div style="width:22px;text-align:center;font-size:11px;color:#2a9d4a">${t.s||"–"}</div>
-      <div style="width:22px;text-align:center;font-size:11px;color:#666">${t.u||"–"}</div>
-      <div style="width:22px;text-align:center;font-size:11px;color:#e53935">${t.n||"–"}</div>
-      <div style="width:44px;text-align:right;font-size:13px;font-weight:700;color:${t.isOwn?"#2a9d4a":"#efefef"}">${t.pts}</div>
-    </div>`).join("")}
-  </div></div>
-  <div style="padding:0 16px;display:flex;gap:14px;font-size:11px;color:#666">
-    <span style="color:#f4c430">● Aufstieg</span><span style="color:#e53935">● Abstieg</span>
-  </div></div>`;
-}
-
-// ── VEREIN ────────────────────────────────────
-function renderVerein(){
-  return `<div style="padding-top:16px">
-  <div class="ch-header">
-    <div style="font-size:44px;margin-bottom:8px">🏓</div>
-    <div style="font-size:22px;font-weight:900;color:#fff">F.C. Kollnau 1920 e.V.</div>
-    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">TTBW · Südbaden · VNr. 2062050</div>
-    <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">📍 Georg-Schindler-Halle · 79183 Waldkirch</div>
-  </div>
-  <div class="sec"><div class="sec-t">5 Mannschaften</div>
-  <div class="cf">${ALL_TEAMS.map((t,i)=>`
-    <div class="tr${t.isOwn?" own":""}" style="${i===ALL_TEAMS.length-1?"border-bottom:none":""}">
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:${t.isOwn?700:500}">${t.name}${t.isOwn?" 👤":""}</div>
-        <div style="font-size:11px;color:#666;margin-top:2px">${t.liga}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:13px;font-weight:700;color:${t.isOwn?"#2a9d4a":"#efefef"}">Platz ${t.rank}</div>
-        <div style="font-size:11px;color:#666">${t.pts} Pkt</div>
-      </div>
-    </div>`).join("")}
-  </div></div>
-  <div class="sec"><div class="sec-t">Vereinsrangliste (${CLUB_RANKING.length} Spieler)</div>
-  <div class="cf">
-    <div class="th"><div style="width:36px">Pos</div><div style="flex:1">Spieler</div><div style="width:56px;text-align:right">TTR</div></div>
-    ${CLUB_RANKING.map((p,i)=>`
-    <div class="tr${p.isMe?" own":""}${!p.isMe&&i%2===0?" alt":""}">
-      <div style="width:36px;font-size:13px;font-weight:700;color:${i===0?"#f4c430":i===1?"#aaa":i===2?"#cd7f32":"#3a3a3a"}">
-        ${i===0?"🥇":i===1?"🥈":i===2?"🥉":`${p.pos}.`}
-      </div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:${p.isMe?700:400}">${p.name}${p.isMe?" 👤":""}</div>
-        <div style="font-size:10px;color:#666;margin-top:1px">${p.team}</div>
-      </div>
-      <div style="width:56px;text-align:right;font-size:14px;font-weight:700;color:${p.isMe?"#2a9d4a":"#efefef"}">${p.ttr||"–"}</div>
-    </div>`).join("")}
-  </div></div>
-  <div style="padding:0 16px;display:flex;justify-content:space-between;align-items:center">
-    <div class="note" style="padding:0">* Daten aus TTBW Vereinsrangliste</div>
-    <button onclick="logout()" style="background:none;border:1px solid #3a3a3a;border-radius:8px;color:#888;font-size:11px;padding:4px 10px;cursor:pointer">Abmelden</button>
-  </div>
-  <div style="height:8px"></div></div>`;
-}
-
-// ── SPIELE ────────────────────────────────────
-function renderSpiele(){
-  const seen=new Set(),played=[];
-  S.myGames.forEach(g=>{
-    const k=g.date+g.mS+g.mH;
-    if(!seen.has(k)){seen.add(k);played.push({date:g.date,home:g.mH,away:g.mA,score:g.mS,fcWon:g.fW});}
+async function loadSchedule() {
+  const data = await apiFetch('/api/ttr/team/schedule', {
+    teamId: CFG.teamId,
+    season: CFG.season
   });
-  played.reverse();
-  const up=S.spielView==="upcoming";
-  return `<div style="padding-top:16px">
-  <div class="tog">
-    <button class="tb" data-view="upcoming" style="background:${up?"#2a9d4a":"transparent"};color:${up?"#fff":"#888"}">📅 Kommende</button>
-    <button class="tb" data-view="results"  style="background:${!up?"#2a9d4a":"transparent"};color:${!up?"#fff":"#888"}">📋 Ergebnisse</button>
-  </div>
-  ${up?`<div class="sec"><div class="sec-t">${S.upcoming.length} Spiele geplant</div>
-    ${S.upcoming.map(m=>`<div class="mc">
-      <div style="font-size:11px;color:#58a6ff;font-weight:700;margin-bottom:8px">📅 ${m.date}${m.time?" · "+m.time+" Uhr":""}</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <div style="flex:1;font-size:14px;font-weight:700;text-align:right">${m.home}</div>
-        <div style="background:#2a2a2a;border-radius:6px;padding:3px 8px;font-size:11px;color:#888;font-weight:800">VS</div>
-        <div style="flex:1;font-size:14px;font-weight:700">${m.away}</div>
-      </div>
-      ${m.loc?`<div style="font-size:11px;color:#888;padding-top:8px;border-top:1px solid #2a2a2a">📍 ${m.loc}</div>`:""}
-    </div>`).join("")}
-  </div>`:
-  `<div class="sec"><div class="sec-t">${played.length} Begegnungen</div>
-    ${played.map(r=>`<div class="mc">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="flex:1">
-          <div style="font-size:11px;color:#888;margin-bottom:4px">${r.date}</div>
-          <div style="font-size:13px;font-weight:600">${r.home}</div>
-          <div style="font-size:12px;color:#888">vs. ${r.away}</div>
-        </div>
-        <div class="scb" style="background:${r.fcWon===true?"rgba(42,157,74,.13)":r.fcWon===false?"rgba(229,57,53,.11)":"rgba(100,100,100,.1)"};border:1px solid ${r.fcWon===true?"rgba(42,157,74,.38)":r.fcWon===false?"rgba(229,57,53,.38)":"#2a2a2a"}">
-          <div style="font-size:22px;font-weight:800;color:${r.fcWon===true?"#2a9d4a":r.fcWon===false?"#e53935":"#888"}">${r.score}</div>
-          <div style="font-size:10px;font-weight:700;color:${r.fcWon===true?"#2a9d4a":r.fcWon===false?"#e53935":"#888"}">${r.fcWon===true?"SIEG":r.fcWon===false?"NIEDERLAGE":"UNENTSCH."}</div>
-        </div>
-      </div>
-    </div>`).join("")}
-  </div>`}
-  </div>`;
+  return data;
 }
 
-// ── ICH ───────────────────────────────────────
-function renderIch(){
-  const g=S.myGames;
-  const wins=g.filter(x=>x.won).length,losses=g.filter(x=>!x.won).length;
-  const pct=Math.round((wins/g.length)*100);
-  const s5g=g.filter(x=>x.s5!==null),s5w=s5g.filter(x=>x.s5===true).length;
-  const s5pct=s5g.length?Math.round((s5w/s5g.length)*100):0;
-  const gain=g.filter(x=>x.d>0).reduce((s,x)=>s+x.d,0);
-  const loss=g.filter(x=>x.d<0).reduce((s,x)=>s+x.d,0);
-  const net=gain+loss;
-  const bestD=Math.max(...g.map(x=>x.d)),worstD=Math.min(...g.map(x=>x.d));
-  const bestG=g.find(x=>x.d===bestD),worstG=g.find(x=>x.d===worstD);
-  let run=0;
-  const gs=g.map(x=>{run+=x.d;return{...x,sum:run};});
-  return `<div style="padding-top:16px">
-  <div class="prof">
-    <div class="av">👤</div>
-    <div>
-      <div style="font-size:20px;font-weight:900;color:#fff">${S.playerName}</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:2px">FC Kollnau III · TTBW</div>
-      <div style="font-size:13px;color:#2a9d4a;margin-top:6px;font-weight:800">TTR: <span style="font-size:28px">${S.ttr}</span></div>
-    </div>
-  </div>
-  <div class="sec"><div class="sec-t">Saison 25/26 – Statistik</div>
-    <div class="sg">
-      <div class="sb"><div style="font-size:20px">✅</div><div class="sv" style="color:#2a9d4a">${wins}</div><div class="sl">Siege</div></div>
-      <div class="sb"><div style="font-size:20px">❌</div><div class="sv" style="color:#e53935">${losses}</div><div class="sl">Niederlagen</div></div>
-      <div class="sb"><div style="font-size:20px">📊</div><div class="sv" style="color:#58a6ff">${pct}%</div><div class="sl">Siegquote</div></div>
-      <div class="sb"><div style="font-size:20px">🏆</div><div class="sv" style="color:#f4c430">#4</div><div class="sl">Tabelle</div></div>
-    </div>
-    <div class="sg">
-      <div class="sb"><div style="font-size:20px">5️⃣</div><div class="sv" style="color:#e67e22">${s5pct}%</div><div class="sl">5. Satz<br>${s5w}/${s5g.length}</div></div>
-      <div class="sb"><div style="font-size:20px">📈</div><div class="sv" style="color:#2a9d4a">+${gain}</div><div class="sl">TTR gewonnen</div></div>
-      <div class="sb"><div style="font-size:20px">📉</div><div class="sv" style="color:#e53935">${loss}</div><div class="sl">TTR verloren</div></div>
-      <div class="sb"><div style="font-size:20px">⚖️</div><div class="sv" style="color:${net>=0?"#2a9d4a":"#e53935"}">${net>=0?"+":""}${net}</div><div class="sl">TTR Netto</div></div>
-    </div>
-    <div class="card" style="margin-top:0">
-      <div style="font-size:11px;color:#666;font-weight:700;letter-spacing:.6px;margin-bottom:8px">REKORDWERTE</div>
-      <div class="rec">
-        <div class="rb2 p"><div style="font-size:22px;font-weight:900;color:#2a9d4a">+${bestD}</div><div style="font-size:10px;color:#888;margin-top:2px">Höchster Gewinn</div><div style="font-size:10px;font-weight:600;color:#2a9d4a;margin-top:3px">vs. ${bestG?.opp}</div><div style="font-size:10px;color:#3a3a3a">${bestG?.date.slice(0,5)}</div></div>
-        <div class="rb2 n"><div style="font-size:22px;font-weight:900;color:#e53935">${worstD}</div><div style="font-size:10px;color:#888;margin-top:2px">Höchster Verlust</div><div style="font-size:10px;font-weight:600;color:#e53935;margin-top:3px">vs. ${worstG?.opp}</div><div style="font-size:10px;color:#3a3a3a">${worstG?.date.slice(0,5)}</div></div>
+function renderNextMatch(meetings) {
+  const now = new Date();
+  // find next upcoming
+  const upcoming = meetings
+    .filter(m => new Date(m.date) > now)
+    .sort((a,b) => new Date(a.date) - new Date(b.date));
+  const next = upcoming[0];
+
+  if (!next) {
+    document.getElementById('next-match-wrap').innerHTML = '<div class="empty">Keine kommenden Spiele</div>';
+    return;
+  }
+  const dt = fmtDate(next.date);
+  const home = next.team_home_id == CFG.teamId;
+  const opp = home ? next.team_away : next.team_home;
+
+  document.getElementById('next-match-wrap').innerHTML = `
+    <div class="next-match">
+      <div class="next-match-date">
+        <div class="next-match-day">${dt.d}</div>
+        <div class="next-match-mon">${dt.m}</div>
       </div>
-    </div>
-  </div>
-  <div class="sec"><div class="sec-t">TTR-Verlauf</div>
-    <div class="card">
-      ${chart(S.ttrHistory,358,90)}
-      <div style="display:flex;justify-content:space-between;margin-top:6px">
-        <span style="font-size:11px;color:#666">Start: ${S.ttrHistory[0]}</span>
-        <span style="font-size:12px;color:#2a9d4a;font-weight:700">Aktuell: ${S.ttrHistory[S.ttrHistory.length-1]}</span>
+      <div class="next-match-divider"></div>
+      <div class="next-match-info">
+        <div class="next-match-vs">${opp || 'Gegner unbekannt'}</div>
+        <div class="next-match-meta">${new Date(next.date).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} Uhr · <span class="badge ${home ? 'badge-home' : 'badge-away'}">${home ? 'Heim' : 'Auswärts'}</span></div>
       </div>
-    </div>
-  </div>
-  <div class="sec"><div class="sec-t">Alle Begegnungen (${g.length})</div>
-  <div class="cf">
-    <div class="th">
-      <div style="width:66px">Datum</div><div style="flex:1">Gegner</div>
-      <div style="width:36px;text-align:center">Erg.</div>
-      <div style="width:40px;text-align:right">TTR</div>
-      <div style="width:38px;text-align:right">+/−</div>
-      <div style="width:38px;text-align:right">∑</div>
-    </div>
-    ${[...gs].reverse().map((x,i)=>`
-    <div class="tr${i%2===0?"":" alt"}">
-      <div style="width:66px;font-size:10px;color:#666">${x.date.slice(0,8)}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.opp}</div>
-        <div style="font-size:10px;color:#666">TTR ${x.oTTR}</div>
-      </div>
-      <div style="width:36px;text-align:center;font-size:13px;font-weight:800;color:${x.won?"#2a9d4a":"#e53935"}">${x.res}</div>
-      <div style="width:40px;text-align:right;font-size:11px;color:#666">${x.tB}</div>
-      <div style="width:38px;text-align:right;font-size:12px;font-weight:700;color:${x.d>0?"#2a9d4a":"#e53935"}">${x.d>0?"+":""}${x.d}</div>
-      <div style="width:38px;text-align:right;font-size:12px;font-weight:700;color:${x.sum>0?"#2a9d4a":x.sum<0?"#e53935":"#888"}">${x.sum>0?"+":""}${x.sum}</div>
-    </div>`).join("")}
-  </div>
-  <div class="note">∑ = kumulierte TTR-Punkte</div>
-  </div>
-  <div style="height:8px"></div></div>`;
+    </div>`;
 }
 
-// ═══════════════════════════════════════════════
-//  HANDLERS
-// ═══════════════════════════════════════════════
-function attachHandlers(){
-  document.querySelectorAll(".tb").forEach(btn=>{
-    btn.addEventListener("click",()=>{S.spielView=btn.dataset.view;render();});
+function renderSchedule(meetings) {
+  if (!meetings || !meetings.length) {
+    document.getElementById('schedule-wrap').innerHTML = '<div class="empty">Kein Spielplan verfügbar</div>';
+    return;
+  }
+
+  const sorted = [...meetings].sort((a,b) => new Date(a.date) - new Date(b.date));
+  const now = new Date();
+
+  const html = sorted.map(m => {
+    const dt = fmtDate(m.date);
+    const isPast = new Date(m.date) < now;
+    const home = m.team_home_id == CFG.teamId || m.team_home === 'FC Kollnau III';
+    const opp = home
+      ? (m.team_away || m.opponent_team_name || 'Gegner')
+      : (m.team_home || m.opponent_team_name || 'Gegner');
+
+    let resultHtml = '';
+    if (isPast && m.matches_won != null) {
+      const myWon = home ? parseInt(m.matches_won || 0) : parseInt(m.matches_lost || 0);
+      const myLost = home ? parseInt(m.matches_lost || 0) : parseInt(m.matches_won || 0);
+      const isWin = myWon > myLost;
+      resultHtml = `<div class="match-result">
+        <div class="result-score ${isWin ? 'result-win' : 'result-loss'}">${myWon}:${myLost}</div>
+        <div style="font-size:10px;color:var(--text2)">${isWin ? 'Sieg' : 'Niederl.'}</div>
+      </div>`;
+    } else if (isPast) {
+      resultHtml = `<div class="match-result"><div class="result-pending">Ergebnis<br>ausstehend</div></div>`;
+    } else {
+      resultHtml = `<div class="match-result"><div class="result-pending">${new Date(m.date).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} Uhr</div></div>`;
+    }
+
+    return `<div class="match-item">
+      <div class="match-date-col">
+        <div class="match-date-d">${dt.d}</div>
+        <div class="match-date-m">${dt.m}</div>
+      </div>
+      <div class="match-teams">
+        <strong>${opp}</strong>
+        <span><span class="badge ${home ? 'badge-home' : 'badge-away'}">${home ? 'Heim' : 'Auswärts'}</span></span>
+      </div>
+      ${resultHtml}
+    </div>`;
+  }).join('');
+
+  document.getElementById('schedule-wrap').innerHTML = html;
+}
+
+function renderRecentMatches(meetings) {
+  const now = new Date();
+  const past = meetings
+    .filter(m => new Date(m.date) < now)
+    .sort((a,b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 5);
+
+  if (!past.length) {
+    document.getElementById('recent-matches-wrap').innerHTML = '<div class="empty">Keine Begegnungen geladen</div>';
+    return;
+  }
+
+  const html = past.map(m => {
+    const dt = fmtDate(m.date);
+    const home = m.team_home_id == CFG.teamId;
+    const opp = home ? (m.team_away || m.opponent_team_name) : (m.team_home || m.opponent_team_name);
+    const myWon = home ? parseInt(m.matches_won || 0) : parseInt(m.matches_lost || 0);
+    const myLost = home ? parseInt(m.matches_lost || 0) : parseInt(m.matches_won || 0);
+    const isWin = myWon > myLost;
+
+    return `<div class="match-item">
+      <div class="match-date-col">
+        <div class="match-date-d">${dt.d}</div>
+        <div class="match-date-m">${dt.m}</div>
+      </div>
+      <div class="match-teams">
+        <strong>${opp || 'Gegner'}</strong>
+        <span><span class="badge ${home ? 'badge-home' : 'badge-away'}">${home ? 'Heim' : 'Auswärts'}</span></span>
+      </div>
+      <div class="match-result">
+        <div class="result-score ${isWin ? 'result-win' : 'result-loss'}">${myWon}:${myLost}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('recent-matches-wrap').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOAD PLAYER BALANCES (Spielerbilanzen)
+// ═══════════════════════════════════════════════════════════
+async function loadPlayerBalances() {
+  const _data = 'routes/click-tt+/$association+/$season+/$type+/($groupname).gruppe.$urlid_.mannschaft.$teamid.$teamname+/spielerbilanzen.$filter';
+  const data = await apiFetch(
+    `/click-tt/${CFG.assoc}/${CFG.season}/ligen/x/gruppe/${CFG.groupId}/mannschaft/${CFG.teamId}/x/spielerbilanzen/gesamt`,
+    { _data }
+  );
+  return data;
+}
+
+function renderPlayerBalances(data) {
+  const balances = data?.data?.player_balances || [];
+  if (!balances.length) {
+    document.getElementById('player-balances-wrap').innerHTML = '<div class="empty">Keine Bilanzdaten</div>';
+    return;
+  }
+
+  // find my stats
+  const me = balances.find(p =>
+    (p.player_lastname || p.player_id || '').toLowerCase().includes(CFG.myName.toLowerCase())
+  );
+
+  if (me) {
+    const wins = parseInt(me.points_won || 0);
+    const losses = parseInt(me.points_lost || 0);
+    const total = wins + losses;
+    const quote = total > 0 ? Math.round(wins / total * 100) + '%' : '—';
+    document.getElementById('stat-wins').textContent = wins;
+    document.getElementById('stat-losses').textContent = losses;
+    document.getElementById('stat-quote').textContent = quote;
+    document.getElementById('my-ttr-display').textContent = '—'; // TTR from meldungen below
+
+    // my stats section
+    document.getElementById('my-stats-wrap').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div class="hero-stat"><div class="hero-stat-val green">${wins}</div><div class="hero-stat-lbl">Siege</div></div>
+        <div class="hero-stat"><div class="hero-stat-val red">${losses}</div><div class="hero-stat-lbl">Niederlagen</div></div>
+        <div class="hero-stat"><div class="hero-stat-val">${quote}</div><div class="hero-stat-lbl">Quote</div></div>
+      </div>`;
+  } else {
+    document.getElementById('my-stats-wrap').innerHTML = '<div class="empty">Keine persönlichen Daten</div>';
+  }
+
+  const sorted = [...balances].sort((a,b) => parseInt(b.points_won||0) - parseInt(a.points_won||0));
+  const html = sorted.map((p, i) => {
+    const isMe = (p.player_lastname || '').toLowerCase().includes(CFG.myName.toLowerCase());
+    const name = `${p.player_firstname || ''} ${p.player_lastname || p.player_id || '?'}`.trim();
+    return `<div class="player-row">
+      <div class="player-rank-badge ${isMe ? 'me' : ''}">${i + 1}</div>
+      <div class="player-name ${isMe ? 'me' : ''}">${name}${isMe ? ' 🏓' : ''}</div>
+      <div class="player-wl">
+        <span class="wl-win">${p.points_won || 0}</span>
+        <span class="wl-sep">:</span>
+        <span class="wl-loss">${p.points_lost || 0}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('player-balances-wrap').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOAD TEAM PLAYERS (Aufstellung + TTR aus Meldungen)
+// ═══════════════════════════════════════════════════════════
+async function loadTeamPlayers() {
+  const data = await apiFetch('/api/ttr/team/players', { teamId: CFG.teamId });
+  return data;
+}
+
+function renderTeamPlayers(data) {
+  const players = data?.data || [];
+  if (!players.length) {
+    document.getElementById('team-players-wrap').innerHTML = '<div class="empty">Keine Aufstellung</div>';
+    return;
+  }
+
+  const html = players.map(p => {
+    const isMe = (p.lastname || '').toLowerCase().includes(CFG.myName.toLowerCase());
+    const name = `${p.firstname || ''} ${p.lastname || ''}`.trim();
+    return `<div class="player-row">
+      <div class="player-rank-badge ${isMe ? 'me' : ''}">${p.rank || '?'}</div>
+      <div class="player-name ${isMe ? 'me' : ''}">${name}${isMe ? ' 🏓' : ''}</div>
+      <div style="font-size:11px;color:var(--text2)">${p.internal_id || ''}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('team-players-wrap').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOAD CLUB TEAMS
+// ═══════════════════════════════════════════════════════════
+async function loadClubTeams() {
+  const data = await apiFetch('/api/ttr/teams', {
+    clubNumber: CFG.clubNr,
+    organization: CFG.org
   });
+  return data;
 }
-document.getElementById("nav").addEventListener("click",e=>{
-  const btn=e.target.closest("[data-tab]");
-  if(btn){S.tab=btn.dataset.tab;renderNav();render();document.getElementById("content").scrollTop=0;}
-});
-document.getElementById("liPass")?.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
 
-// ═══════════════════════════════════════════════
+function renderClubTeams(data) {
+  const teams = data?.data || [];
+  if (!teams.length) {
+    document.getElementById('club-teams-wrap').innerHTML = '<div class="empty">Keine Mannschaften gefunden</div>';
+    return;
+  }
+
+  const html = `
+    <div style="margin-bottom:12px;padding:4px 0">
+      <div style="font-size:24px;font-weight:800;letter-spacing:-1px">FC Kollnau</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">Vereinsnr. 22036 · TTBW · Waldkirch</div>
+    </div>
+    <div class="club-teams-grid">
+    ${teams.map(t => {
+      const isMe = t.team_id == CFG.teamId;
+      return `<div class="club-team-card" style="${isMe ? 'border:1px solid rgba(29,185,84,.3)' : ''}">
+        <div class="club-team-rank" style="${isMe ? 'color:var(--accent)' : ''}">#${t.table_rank || '?'}</div>
+        <div class="club-team-info">
+          <div class="club-team-name">${t.team_name}${isMe ? ' 🏓' : ''}</div>
+          <div class="club-team-liga">${t.league_name || '—'} · ${t.team_organisation_short || ''}</div>
+        </div>
+        <div class="club-team-pts">
+          <div class="club-team-pts-val">${t.points_won || 0}:${t.points_lost || 0}</div>
+          <div class="club-team-pts-lbl">Punkte</div>
+        </div>
+      </div>`;
+    }).join('')}
+    </div>`;
+
+  document.getElementById('club-teams-wrap').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOAD TTR from Mannschaftsmeldungen (has Q-TTR per player)
+// ═══════════════════════════════════════════════════════════
+async function loadMyTTR() {
+  try {
+    const _data = 'routes/click-tt+/$association+/$season+/$type+/$groupname.gruppe.$urlid+/mannschaftsmeldungen.$filter';
+    const data = await apiFetch(
+      `/click-tt/${CFG.assoc}/${CFG.season}/ligen/x/gruppe/${CFG.groupId}/mannschaftsmeldungen/vr`,
+      { _data }
+    );
+
+    // find FC Kollnau III team
+    const teams = data?.data?.teams || [];
+    const myTeam = teams.find(t => t.team_id == CFG.teamId);
+    if (!myTeam) return null;
+
+    // find Markus Reiß
+    const players = myTeam.players || [];
+    const me = players.find(p =>
+      (p.player_lastname || p.lastname || '').toLowerCase().includes(CFG.myName.toLowerCase())
+    );
+    if (!me) return null;
+
+    return me.q_ttr || me.ttr || me.fed_rank || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MAIN LOAD
+// ═══════════════════════════════════════════════════════════
+async function loadAll() {
+  // Reset loading states for home
+  ['next-match-wrap','mini-table-wrap','recent-matches-wrap'].forEach(id => {
+    document.getElementById(id).innerHTML = '<div class="loading"><div class="spinner"></div><p>Lade…</p></div>';
+  });
+
+  // Load table
+  loadTable().then(data => {
+    tableData = data;
+    renderMiniTable(data);
+    if (loaded['tabelle']) renderFullTable(data);
+  }).catch(e => {
+    console.error('Table error:', e);
+    document.getElementById('mini-table-wrap').innerHTML = '<div class="empty">Fehler beim Laden der Tabelle</div>';
+  });
+
+  // Load schedule
+  loadSchedule().then(data => {
+    const meetings = data?.data || [];
+    scheduleData = meetings;
+    renderNextMatch(meetings);
+    renderRecentMatches(meetings);
+    if (loaded['spiele']) renderSchedule(meetings);
+  }).catch(e => {
+    console.error('Schedule error:', e);
+    document.getElementById('next-match-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>';
+    document.getElementById('recent-matches-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>';
+  });
+
+  // Load TTR
+  loadMyTTR().then(ttr => {
+    if (ttr) {
+      document.getElementById('ttr-val').textContent = ttr;
+      document.getElementById('my-ttr-display').textContent = ttr;
+    } else {
+      document.getElementById('ttr-val').textContent = '—';
+    }
+  }).catch(() => {});
+}
+
+async function loadTab(name) {
+  if (name === 'tabelle') {
+    if (tableData) renderFullTable(tableData);
+    else loadTable().then(d => { tableData = d; renderFullTable(d); })
+       .catch(() => { document.getElementById('full-table-wrap').innerHTML = '<div class="empty" style="padding:20px">Fehler beim Laden</div>'; });
+  }
+  if (name === 'verein') {
+    loadClubTeams().then(renderClubTeams)
+      .catch(() => { document.getElementById('club-teams-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>'; });
+  }
+  if (name === 'spiele') {
+    if (scheduleData) renderSchedule(scheduleData);
+    else loadSchedule().then(d => { scheduleData = d?.data || []; renderSchedule(scheduleData); })
+        .catch(() => { document.getElementById('schedule-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>'; });
+  }
+  if (name === 'ich') {
+    loadPlayerBalances().then(renderPlayerBalances)
+      .catch(() => {
+        document.getElementById('player-balances-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>';
+        document.getElementById('my-stats-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>';
+      });
+    loadTeamPlayers().then(renderTeamPlayers)
+      .catch(() => { document.getElementById('team-players-wrap').innerHTML = '<div class="empty">Fehler beim Laden</div>'; });
+    loadMyTTR().then(ttr => {
+      if (ttr) document.getElementById('my-ttr-display').textContent = ttr;
+    }).catch(() => {});
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 //  INIT
-// ═══════════════════════════════════════════════
-renderNav();render();
-
-if(loadSaved()){
-  // Bereits eingeloggt – sofort Daten laden
-  loadAllData();
-} else {
-  // Login-Screen anzeigen
-  document.getElementById("loginWrap").style.display="flex";
-  S.apiStatus="fallback";setBadge();render();
-}
-
-// Auto-refresh alle 10 Minuten
-setInterval(()=>{if(S.loggedIn)loadAllData();}, 10*60*1000);
+// ═══════════════════════════════════════════════════════════
+startClock();
+loaded['home'] = true;
+loadAll();
 </script>
 </body>
 </html>
