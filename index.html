@@ -706,7 +706,8 @@ function renderSchedule(list) {
 // ═══════════════════════════════════════════════════════════
 async function loadBilanzen() {
   const res = await proxyAction('bilanzen');
-  return res?.player_balances || [];
+  // proxy returns { ok, players: [ { player_id, player_firstname, player_lastname, points_won, points_lost } ] }
+  return res?.players || [];
 }
 
 function renderBilanzen(balances) {
@@ -748,14 +749,14 @@ function renderBilanzen(balances) {
 // ═══════════════════════════════════════════════════════════
 async function loadVereinsTeams() {
   const res = await proxyAction('vereinsteams');
-  return res?.teams || [];
+  return { teams: res?.teams || [], club_name: res?.club_name || 'FC Kollnau' };
 }
 
-function renderVereinsTeams(teams) {
-  if (!teams.length) { err('club-teams-wrap','Keine Mannschaften'); return; }
+function renderVereinsTeams({ teams, club_name }) {
+  if (!teams?.length) { err('club-teams-wrap','Keine Mannschaften'); return; }
   document.getElementById('club-teams-wrap').innerHTML = `
     <div style="margin-bottom:12px;padding:4px 0">
-      <div style="font-size:24px;font-weight:800;letter-spacing:-1px">FC Kollnau</div>
+      <div style="font-size:24px;font-weight:800;letter-spacing:-1px">${club_name || 'FC Kollnau'}</div>
       <div style="font-size:12px;color:var(--text2);margin-top:2px">Vereinsnr. 22036 · TTBW · Waldkirch</div>
     </div>
     <div class="club-teams-grid">
@@ -781,13 +782,13 @@ function renderVereinsTeams(teams) {
 // ═══════════════════════════════════════════════════════════
 async function loadMyTTR() {
   try {
-    const res = await proxyAction('mannschaftsmeldungen');
+    const res = await proxyAction('meldungen');
     const players = res?.players || [];
     const me = players.find(p =>
       (p.player_lastname||p.lastname||'').toLowerCase().includes(CFG.myName.toLowerCase())
     );
     // q_ttr is the Q-TTR from Meldung
-    return me?.q_ttr || me?.ttr || null;
+    return me?.q_ttr || me?.fed_rank || me?.ttr || null;
   } catch { return null; }
 }
 
@@ -832,7 +833,7 @@ async function loadTab(name) {
     else loadTable().then(renderFullTable).catch(() => err('full-table-wrap','Fehler'));
   }
   if (name === 'verein') {
-    loadVereinsTeams().then(renderVereinsTeams).catch(() => err('club-teams-wrap','Fehler'));
+    loadVereinsTeams().then(renderVereinsTeams).catch(e => { console.error(e); err('club-teams-wrap','Fehler beim Laden'); });
   }
   if (name === 'spiele') {
     if (meetings?.length) renderSchedule(meetings);
