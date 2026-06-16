@@ -747,12 +747,85 @@ function renderBilanzen(balances) {
 // ═══════════════════════════════════════════════════════════
 //  VEREIN
 // ═══════════════════════════════════════════════════════════
-async function loadVereinsTeams() {
-  const res = await proxyAction('vereinsrang');
-  return res?.players || [];
+// ═══════════════════════════════════════════════════════════
+//  VEREINSRANGLISTE – client-side (Proxy-Timeout umgehen)
+// ═══════════════════════════════════════════════════════════
+const ALLE_TEAMS = [
+  { name: 'FC Kollnau I',   teamId: '2959788', groupId: '494496' },
+  { name: 'FC Kollnau II',  teamId: '2960599', groupId: '494202' },
+  { name: 'FC Kollnau III', teamId: '2960786', groupId: '494633' },
+  { name: 'FC Kollnau IV',  teamId: '2959922', groupId: '494684' },
+  { name: 'FC Kollnau V',   teamId: '2992085', groupId: '502100' },
+];
+
+async function fetchBilanzenTeam(team) {
+  const _data = 'routes/click-tt+/$association+/$season+/$type+/($groupname).gruppe.$urlid_.mannschaft.$teamid.$teamname+/spielerbilanzen.$filter';
+  const url = `https://www.mytischtennis.de/click-tt/TTBW/25--26/ligen/x/gruppe/${team.groupId}/mannschaft/${team.teamId}/x/spielerbilanzen/gesamt?_data=${encodeURIComponent(_data)}`;
+  const res = await fetch(`${CFG.proxy}?url=${encodeURIComponent(url)}`);
+  if (!res.ok) return [];
+  const json = await res.json();
+  const bs = json?.data?.balancesheet || [];
+  const myTeam = bs.find(t => String(t.team_id) === team.teamId) || bs[0];
+  return (myTeam?.single_player_statistics || []).map(p => ({
+    player_id: p.player_id,
+    firstname: p.player_firstname || '',
+    lastname:  p.player_lastname  || '',
+    team:      team.name,
+    wins:      parseInt(p.points_won  || 0),
+    losses:    parseInt(p.points_lost || 0),
+    q_ttr:     null,
+  }));
 }
 
-function renderVereinsTeams(players) {
+async function fetchQTTR(playerId) {
+  try {
+    const url = `https://www.mytischtennis.de/click-tt/spieler/${playerId}/spielerportrait`;
+    const res = await fetch(`${CFG.proxy}?url=${encodeURIComponent(url)}`);
+    const text = await res.text();
+    // Q-TTR-Wert appears in HTML followed by the number
+    const m = text.match(/Q-TTR-Wert[\s\S]{0,300}?([0-9]{3,4})/);
+    return m ? parseInt(m[1]) : null;
+  } catch { return null; }
+}
+
+async function loadVereinsTeams() {
+  // Step 1: collect all players from all 5 teams
+  const results = await Promise.allSettled(ALLE_TEAMS.map(fetchBilanzenTeam));
+  const playerMap = {};
+  for (const r of results) {
+    if (r.status !== 'fulfilled') continue;
+    for (const p of r.value) {
+      if (!p.player_id) continue;
+      if (!playerMap[p.player_id]) playerMap[p.player_id] = { ...p };
+      else {
+        playerMap[p.player_id].wins   += p.wins;
+        playerMap[p.player_id].losses += p.losses;
+      }
+    }
+  }
+  const players = Object.values(playerMap);
+
+  // Step 2: fetch Q-TTR for each player (batches of 5)
+  for (let i = 0; i < players.length; i += 5) {
+    await Promise.all(players.slice(i, i + 5).map(async p => {
+      p.q_ttr = await fetchQTTR(p.player_id);
+    }));
+    // Update UI progressively
+    const sorted = [...players].sort((a,b) => (b.q_ttr||0) - (a.q_ttr||0));
+    renderVereinsTeams(sorted, true);
+  }
+
+  // Final sort
+  players.sort((a,b) => {
+    if (!a.q_ttr && !b.q_ttr) return 0;
+    if (!a.q_ttr) return 1;
+    if (!b.q_ttr) return -1;
+    return b.q_ttr - a.q_ttr;
+  });
+  return players;
+}
+
+function renderVereinsTeams(players, isPartial = false) {
   const wrap = document.getElementById('club-teams-wrap');
   if (!players?.length) { err('club-teams-wrap', 'Keine Spielerdaten'); return; }
 
@@ -785,7 +858,9 @@ function renderVereinsTeams(players) {
         + \`  <div style="font-size:9px;color:var(--text2)">Q-TTR</div>\`
         + \`</div>\`
         + \`</div>\`;
-    }).join('')}`;
+    }).join('')}
+    ${isPartial ? '<div style="text-align:center;padding:12px;color:var(--text2);font-size:12px"><div class="spinner" style="display:inline-block;width:14px;height:14px;border-width:2px;margin-right:6px;vertical-align:middle"></div>Lade Q-TTR Werte…</div>' : ''}
+  `;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -844,8 +919,8 @@ async function loadTab(name) {
     else loadTable().then(renderFullTable).catch(() => err('full-table-wrap','Fehler'));
   }
   if (name === 'verein') {
-    document.getElementById('club-teams-wrap').innerHTML = '<div class="loading"><div class="spinner"></div><p>Lade Vereinsrangliste… (kann 10–15s dauern)</p></div>';
-    loadVereinsTeams().then(renderVereinsTeams).catch(e => { console.error(e); err('club-teams-wrap','Fehler beim Laden: ' + e.message); });
+    document.getElementById('club-teams-wrap').innerHTML = '<div class="loading"><div class="spinner"></div><p>Lade Vereinsrangliste…</p></div>';
+    loadVereinsTeams().then(players => renderVereinsTeams(players, false)).catch(e => { console.error(e); err('club-teams-wrap','Fehler: ' + e.message); });
   }
   if (name === 'spiele') {
     if (meetings?.length) renderSchedule(meetings);
