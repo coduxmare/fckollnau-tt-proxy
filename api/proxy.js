@@ -9,7 +9,6 @@ export default async function handler(req, res) {
   if (action === 'tabelle')       return handleTabelle(req, res);
   if (action === 'spielplan')     return handleSpielplan(req, res);
   if (action === 'bilanzen')      return handleBilanzen(req, res);
-  if (action === 'vereinsrang')   return handleVereinsRang(req, res);
   if (action === 'meldungen')     return handleMeldungen(req, res);
 
   // Generic proxy fallback
@@ -104,91 +103,6 @@ async function handleBilanzen(req, res) {
   } catch (e) {
     return res.status(500).json({ error: 'bilanzen: ' + e.message });
   }
-}
-
-// ─── VEREINSRANGLISTE ────────────────────────────────────────────────────────
-// Step 1: fetch player NUIDs from all 5 teams' Spielerbilanzen
-// Step 2: fetch Q-TTR for each player from Spielerportrait HTML
-// Step 3: return sorted list
-const TEAMS = [
-  { name: 'FC Kollnau I',   teamId: '2959788', groupId: '494496', ligaSlug: 'x' },
-  { name: 'FC Kollnau II',  teamId: '2960599', groupId: '494202', ligaSlug: 'x' },
-  { name: 'FC Kollnau III', teamId: '2960786', groupId: '494633', ligaSlug: 'x' },
-  { name: 'FC Kollnau IV',  teamId: '2959922', groupId: '494684', ligaSlug: 'x' },
-  { name: 'FC Kollnau V',   teamId: '2992085', groupId: '502100', ligaSlug: 'x' },
-];
-
-async function handleVereinsRang(req, res) {
-  const { assoc = 'TTBW', season = '25--26' } = req.query;
-  const _data = 'routes/click-tt+/$association+/$season+/$type+/($groupname).gruppe.$urlid_.mannschaft.$teamid.$teamname+/spielerbilanzen.$filter';
-
-  // Collect all players across all teams (deduplicated by player_id)
-  const playerMap = {}; // player_id → { name, nuid, team, wins, losses }
-
-  await Promise.allSettled(TEAMS.map(async team => {
-    try {
-      const url = `https://www.mytischtennis.de/click-tt/${assoc}/${season}/ligen/${team.ligaSlug}/gruppe/${team.groupId}/mannschaft/${team.teamId}/x/spielerbilanzen/gesamt?_data=${enc(_data)}`;
-      const json = await fetchJson(url);
-      const balancesheet = json?.data?.balancesheet || [];
-      const myTeam = balancesheet.find(t => String(t.team_id) === String(team.teamId)) || balancesheet[0];
-      const players = myTeam?.single_player_statistics || [];
-
-      for (const p of players) {
-        const id = p.player_id;
-        if (!id) continue;
-        if (!playerMap[id]) {
-          playerMap[id] = {
-            player_id:   id,
-            firstname:   p.player_firstname || '',
-            lastname:    p.player_lastname  || '',
-            team:        team.name,
-            wins:        0,
-            losses:      0,
-            q_ttr:       null,
-          };
-        }
-        // accumulate wins/losses (player may appear in multiple teams)
-        playerMap[id].wins   += parseInt(p.points_won  || 0);
-        playerMap[id].losses += parseInt(p.points_lost || 0);
-      }
-    } catch (_) { /* skip failed team */ }
-  }));
-
-  const players = Object.values(playerMap);
-  if (!players.length) {
-    return res.status(500).json({ error: 'Keine Spieler gefunden' });
-  }
-
-  // Fetch Q-TTR for each player from Spielerportrait
-  // Rate-limit: process in batches of 5 to avoid hammering the server
-  async function getQTTR(nuid) {
-    try {
-      const url = `https://www.mytischtennis.de/click-tt/spieler/${nuid}/spielerportrait`;
-      const html = await fetchHtml(url);
-      // Pattern: "Q-TTR-Wert" followed by the number in the HTML
-      const match = html.match(/Q-TTR-Wert[\s\S]{0,200}?(\d{3,4})/);
-      return match ? parseInt(match[1]) : null;
-    } catch { return null; }
-  }
-
-  // Process in batches of 6 parallel requests
-  const batchSize = 6;
-  for (let i = 0; i < players.length; i += batchSize) {
-    const batch = players.slice(i, i + batchSize);
-    await Promise.all(batch.map(async p => {
-      p.q_ttr = await getQTTR(p.player_id);
-    }));
-  }
-
-  // Sort by Q-TTR descending (null values last)
-  players.sort((a, b) => {
-    if (a.q_ttr === null && b.q_ttr === null) return 0;
-    if (a.q_ttr === null) return 1;
-    if (b.q_ttr === null) return -1;
-    return b.q_ttr - a.q_ttr;
-  });
-
-  return res.status(200).json({ ok: true, players });
 }
 
 // ─── MANNSCHAFTSMELDUNGEN (Q-TTR für "Ich"-Tab) ──────────────────────────────
