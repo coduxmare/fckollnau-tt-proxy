@@ -3,942 +3,673 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0a1628">
+<meta name="theme-color" content="#0d1117">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FC Kollnau TT">
 <title>FC Kollnau TT</title>
-<link rel="manifest" href="manifest.json">
-
 <style>
-  :root {
-    --bg:        #0a1628;
-    --bg2:       #111e35;
-    --bg3:       #1a2d4a;
-    --card:      #152238;
-    --accent:    #1db954;
-    --accent2:   #16a34a;
-    --gold:      #f59e0b;
-    --red:       #ef4444;
-    --text:      #e8edf5;
-    --text2:     #8ca0bc;
-    --border:    rgba(255,255,255,0.07);
-    --radius:    12px;
-    --safe-top:  env(safe-area-inset-top, 0px);
-    --safe-bot:  env(safe-area-inset-bottom, 0px);
-  }
+/* ── TOKENS ─────────────────────────────────────────────────────── */
+:root {
+  --bg0:    #0d1117;
+  --bg1:    #161b22;
+  --bg2:    #1c2128;
+  --bg3:    #21262d;
+  --green:  #2ea043;
+  --green2: #56d364;
+  --red:    #f85149;
+  --gold:   #e3b341;
+  --blue:   #58a6ff;
+  --text0:  #f0f6fc;
+  --text1:  #c9d1d9;
+  --text2:  #8b949e;
+  --border: rgba(240,246,252,0.1);
+  --r:      10px;
+  --safe-t: env(safe-area-inset-top,0px);
+  --safe-b: env(safe-area-inset-bottom,0px);
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; background:var(--bg0); color:var(--text1);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; font-size:15px; }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+/* ── LAYOUT ─────────────────────────────────────────────────────── */
+#app { display:flex; flex-direction:column; height:100dvh; max-width:480px; margin:0 auto; }
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    font-size: 15px;
-    overscroll-behavior: none;
-  }
+#topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:calc(10px + var(--safe-t)) 16px 10px;
+  background:var(--bg0); border-bottom:1px solid var(--border);
+  flex-shrink:0; position:relative; z-index:10;
+}
+.tb-left { display:flex; align-items:center; gap:10px; }
+.tb-icon { width:32px; height:32px; border-radius:8px;
+  background:var(--green); display:flex; align-items:center; justify-content:center; font-size:17px; }
+.tb-name { font-weight:700; font-size:15px; color:var(--text0); line-height:1.15; }
+.tb-sub  { font-size:11px; color:var(--text2); }
+.tb-time { font-size:12px; font-weight:600; color:var(--text2); background:var(--bg2);
+  border:1px solid var(--border); border-radius:20px; padding:4px 10px; }
 
-  /* ── APP SHELL ── */
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100dvh;
-    max-width: 480px;
-    margin: 0 auto;
-    position: relative;
-  }
+#content { flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+.pane { display:none; padding:14px 14px calc(14px + var(--safe-b)); }
+.pane.active { display:block; }
 
-  /* ── TOP BAR ── */
-  #topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: calc(12px + var(--safe-top)) 16px 12px;
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    position: relative;
-    z-index: 10;
-  }
-  #topbar-left { display: flex; align-items: center; gap: 10px; }
-  #topbar-icon {
-    width: 34px; height: 34px; border-radius: 8px;
-    background: linear-gradient(135deg, var(--accent2), var(--accent));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
-  }
-  #topbar-title { font-weight: 700; font-size: 15px; line-height: 1.1; }
-  #topbar-sub { font-size: 11px; color: var(--text2); margin-top: 1px; }
-  #live-badge {
-    display: flex; align-items: center; gap: 5px;
-    background: rgba(29,185,84,0.15); border: 1px solid rgba(29,185,84,0.3);
-    border-radius: 20px; padding: 4px 10px; font-size: 11px;
-    font-weight: 600; color: var(--accent);
-  }
-  #live-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--accent); animation: pulse 2s infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+#navbar { display:flex; background:var(--bg0); border-top:1px solid var(--border); padding-bottom:var(--safe-b); flex-shrink:0; }
+.nb { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:9px 4px 7px; background:none; border:none; color:var(--text2);
+  font-size:10px; font-weight:500; cursor:pointer; transition:color .15s; user-select:none; }
+.nb svg { width:21px; height:21px; stroke-width:1.8; }
+.nb.on { color:var(--green2); }
 
-  /* ── CONTENT ── */
-  #content {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-  }
-  .tab-pane { display: none; padding: 16px 16px calc(16px + var(--safe-bot)); }
-  .tab-pane.active { display: block; }
+/* ── COMPONENTS ─────────────────────────────────────────────────── */
+.card { background:var(--bg1); border:1px solid var(--border); border-radius:var(--r); margin-bottom:12px; overflow:hidden; }
+.card-hd { padding:10px 14px 9px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; }
+.card-title { font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text2); }
+.card-body { padding:12px 14px; }
 
-  /* ── BOTTOM NAV ── */
-  #navbar {
-    display: flex;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
-    padding-bottom: var(--safe-bot);
-    flex-shrink: 0;
-  }
-  .nav-btn {
-    flex: 1; display: flex; flex-direction: column; align-items: center;
-    gap: 3px; padding: 10px 4px 8px; background: none; border: none;
-    color: var(--text2); font-size: 10px; font-weight: 500;
-    cursor: pointer; transition: color .2s; user-select: none;
-  }
-  .nav-btn svg { width: 22px; height: 22px; stroke-width: 1.8; transition: transform .15s; }
-  .nav-btn.active { color: var(--accent); }
-  .nav-btn.active svg { transform: scale(1.1); }
+/* Loading / empty */
+.spin-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:36px 20px; gap:10px; }
+.spin { width:26px; height:26px; border:2px solid var(--border); border-top-color:var(--green2);
+  border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.spin-wrap p, .empty { color:var(--text2); font-size:13px; text-align:center; padding:28px 16px; }
 
-  /* ── CARDS ── */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 12px;
-    overflow: hidden;
-  }
-  .card-header {
-    padding: 12px 14px 10px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .card-title {
-    font-size: 10px; font-weight: 700; letter-spacing: .08em;
-    text-transform: uppercase; color: var(--text2);
-  }
-  .card-body { padding: 14px; }
+/* Hero */
+#hero {
+  background:linear-gradient(160deg, #0d2016 0%, var(--bg1) 60%);
+  border:1px solid var(--border); border-radius:var(--r);
+  padding:18px 16px 16px; margin-bottom:12px; position:relative; overflow:hidden;
+}
+#hero::after { content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse at 90% 10%, rgba(46,160,67,.12), transparent 60%);
+  pointer-events:none; }
+.hero-lbl  { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text2); margin-bottom:6px; }
+.hero-ttr  { font-size:54px; font-weight:800; line-height:1; letter-spacing:-3px; color:var(--text0); }
+.hero-ttr small { font-size:14px; font-weight:400; color:var(--text2); letter-spacing:0; margin-left:6px; vertical-align:middle; }
+.hero-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:14px; }
+.hstat { background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:8px; padding:9px 4px; text-align:center; }
+.hstat-v { font-size:20px; font-weight:700; line-height:1; }
+.hstat-l { font-size:10px; color:var(--text2); margin-top:3px; }
+.g { color:var(--green2); }
+.r { color:var(--red); }
+.gold { color:var(--gold); }
 
-  /* ── HERO TTR ── */
-  #hero {
-    background: linear-gradient(135deg, #0d1f3a 0%, #152238 50%, #0f2a1a 100%);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px 16px 16px;
-    margin-bottom: 12px;
-    position: relative;
-    overflow: hidden;
-  }
-  #hero::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 80% 20%, rgba(29,185,84,.08) 0%, transparent 60%);
-    pointer-events: none;
-  }
-  #hero-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-bottom: 6px; }
-  #hero-ttr { font-size: 52px; font-weight: 800; line-height: 1; color: var(--text); letter-spacing: -2px; }
-  #hero-ttr span { font-size: 16px; font-weight: 500; color: var(--text2); margin-left: 4px; letter-spacing: 0; vertical-align: middle; }
-  #hero-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
-  #hero-stats {
-    display: grid; grid-template-columns: repeat(4,1fr);
-    gap: 8px; margin-top: 16px;
-  }
-  .hero-stat {
-    background: rgba(255,255,255,.04);
-    border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px 6px;
-    text-align: center;
-  }
-  .hero-stat-val { font-size: 20px; font-weight: 700; line-height: 1; }
-  .hero-stat-val.green { color: var(--accent); }
-  .hero-stat-val.red   { color: var(--red); }
-  .hero-stat-val.gold  { color: var(--gold); }
-  .hero-stat-lbl { font-size: 10px; color: var(--text2); margin-top: 3px; }
+/* Next match */
+.nmatch { display:flex; align-items:center; gap:12px; padding:4px 0; }
+.nmatch-d { text-align:center; min-width:40px; }
+.nmatch-day { font-size:22px; font-weight:800; color:var(--green2); line-height:1; }
+.nmatch-mon { font-size:10px; color:var(--text2); }
+.nmatch-div { width:1px; height:36px; background:var(--border); }
+.nmatch-info { flex:1; }
+.nmatch-vs { font-size:14px; font-weight:600; color:var(--text0); }
+.nmatch-meta { font-size:11px; color:var(--text2); margin-top:2px; }
 
-  /* ── NEXT MATCH ── */
-  .next-match {
-    background: var(--bg3);
-    border-radius: 10px;
-    padding: 12px 14px;
-    display: flex; align-items: center; gap: 12px;
-  }
-  .next-match-date { text-align: center; min-width: 44px; }
-  .next-match-day { font-size: 22px; font-weight: 800; line-height: 1; color: var(--accent); }
-  .next-match-mon { font-size: 11px; color: var(--text2); }
-  .next-match-divider { width: 1px; height: 36px; background: var(--border); }
-  .next-match-info { flex: 1; }
-  .next-match-vs { font-size: 14px; font-weight: 600; }
-  .next-match-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
-  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
-  .badge-home { background: rgba(29,185,84,.15); color: var(--accent); border: 1px solid rgba(29,185,84,.25); }
-  .badge-away { background: rgba(139,92,246,.15); color: #a78bfa; border: 1px solid rgba(139,92,246,.25); }
-  .badge-done { background: rgba(255,255,255,.07); color: var(--text2); border: 1px solid var(--border); }
+/* Badges */
+.badge { display:inline-flex; align-items:center; padding:1px 7px; border-radius:20px; font-size:10px; font-weight:700; }
+.bh { background:rgba(46,160,67,.15); color:var(--green2); border:1px solid rgba(46,160,67,.3); }
+.ba { background:rgba(88,166,255,.12); color:var(--blue);  border:1px solid rgba(88,166,255,.25); }
+.bd { background:var(--bg3); color:var(--text2); border:1px solid var(--border); }
 
-  /* ── TABLE ── */
-  .league-table { width: 100%; border-collapse: collapse; }
-  .league-table th {
-    font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .06em; color: var(--text2); padding: 8px 10px;
-    text-align: left; border-bottom: 1px solid var(--border);
-  }
-  .league-table th.num, .league-table td.num { text-align: right; }
-  .league-table td {
-    padding: 10px 10px; font-size: 13px;
-    border-bottom: 1px solid rgba(255,255,255,.04);
-  }
-  .league-table tr:last-child td { border-bottom: none; }
-  .league-table tr.my-team td { background: rgba(29,185,84,.06); }
-  .league-table tr.my-team td:first-child { border-left: 3px solid var(--accent); padding-left: 7px; }
-  .rank-num { font-size: 12px; font-weight: 700; color: var(--text2); min-width: 20px; }
-  .rank-num.top { color: var(--gold); }
-  .team-name { font-weight: 600; }
-  .team-name.mine { color: var(--accent); }
-  .pts { font-weight: 700; color: var(--text); }
-  .ratio { color: var(--text2); font-size: 12px; }
+/* Tables */
+.ttbl { width:100%; border-collapse:collapse; }
+.ttbl th { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+  color:var(--text2); padding:8px 10px; border-bottom:1px solid var(--border); text-align:left; }
+.ttbl th.r, .ttbl td.r { text-align:right; }
+.ttbl td { padding:9px 10px; font-size:13px; border-bottom:1px solid rgba(255,255,255,.04); }
+.ttbl tr:last-child td { border-bottom:none; }
+.ttbl tr.me td { background:rgba(46,160,67,.05); }
+.ttbl tr.me td:first-child { border-left:3px solid var(--green2); padding-left:7px; }
+.rank { font-size:12px; font-weight:700; color:var(--text2); }
+.rank.top { color:var(--gold); }
+.tname { font-weight:600; }
+.tname.me { color:var(--green2); }
+.pts { font-weight:700; }
 
-  /* ── MATCHES LIST ── */
-  .match-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid rgba(255,255,255,.04);
-  }
-  .match-item:last-child { border-bottom: none; }
-  .match-date-col { min-width: 38px; text-align: center; }
-  .match-date-d { font-size: 16px; font-weight: 700; color: var(--accent); line-height: 1; }
-  .match-date-m { font-size: 10px; color: var(--text2); }
-  .match-teams { flex: 1; }
-  .match-teams strong { font-size: 13px; font-weight: 600; display: block; }
-  .match-teams span { font-size: 11px; color: var(--text2); margin-top: 1px; display: block; }
-  .match-result { text-align: right; min-width: 44px; }
-  .result-score { font-size: 15px; font-weight: 700; }
-  .result-win  { color: var(--accent); }
-  .result-loss { color: var(--red); }
-  .result-pending { color: var(--text2); font-size: 11px; }
+/* Match rows */
+.mrow { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+.mrow:last-child { border-bottom:none; }
+.mdate { min-width:36px; text-align:center; }
+.mdate-d { font-size:16px; font-weight:700; color:var(--green2); line-height:1; }
+.mdate-m { font-size:10px; color:var(--text2); }
+.mteam { flex:1; }
+.mteam strong { font-size:13px; font-weight:600; color:var(--text0); display:block; }
+.mteam span { font-size:11px; color:var(--text2); margin-top:2px; display:block; }
+.mres { text-align:right; min-width:42px; }
+.mres-score { font-size:15px; font-weight:700; }
+.mres-lbl { font-size:10px; color:var(--text2); }
+.mres-pending { font-size:11px; color:var(--text2); line-height:1.3; }
 
-  /* ── PLAYER BALANCES ── */
-  .player-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,.04);
-  }
-  .player-row:last-child { border-bottom: none; }
-  .player-rank-badge {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: var(--bg3); display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: var(--text2); flex-shrink: 0;
-  }
-  .player-rank-badge.me { background: rgba(29,185,84,.2); color: var(--accent); border: 1px solid rgba(29,185,84,.3); }
-  .player-name { flex: 1; font-size: 13px; font-weight: 600; }
-  .player-name.me { color: var(--accent); }
-  .player-name small { font-size: 11px; color: var(--text2); font-weight: 400; margin-left: 4px; }
-  .player-wl { display: flex; gap: 6px; align-items: center; }
-  .wl-win { font-size: 13px; font-weight: 700; color: var(--accent); }
-  .wl-sep { font-size: 11px; color: var(--text2); }
-  .wl-loss { font-size: 13px; font-weight: 700; color: var(--red); }
+/* Player rows */
+.prow { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+.prow:last-child { border-bottom:none; }
+.pnum { width:26px; height:26px; border-radius:50%; background:var(--bg3);
+  display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--text2); flex-shrink:0; }
+.pnum.me { background:rgba(46,160,67,.2); color:var(--green2); border:1px solid rgba(46,160,67,.3); }
+.pname { flex:1; font-size:13px; font-weight:600; color:var(--text0); }
+.pname small { font-size:11px; color:var(--text2); font-weight:400; margin-left:4px; }
+.pname.me { color:var(--green2); }
+.pwl { display:flex; gap:4px; align-items:center; font-size:13px; font-weight:700; }
 
-  /* ── SECTION HEADER ── */
-  .section-h {
-    font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .08em; color: var(--text2);
-    padding: 0 0 8px; margin: 16px 0 4px;
-    border-bottom: 1px solid var(--border);
-  }
-  .section-h:first-child { margin-top: 0; }
+/* Verein ranking bar */
+.vrow { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+.vrow:last-child { border-bottom:none; }
+.vrow.me { background:rgba(46,160,67,.05); border-radius:6px; margin:0 -4px; padding:9px 4px; }
+.vname-wrap { flex:1; min-width:0; }
+.vname { font-size:13px; font-weight:600; color:var(--text0); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vname.me { color:var(--green2); }
+.vteam { font-size:10px; color:var(--text2); margin-top:1px; }
+.vbar-wrap { width:60px; height:4px; background:var(--bg3); border-radius:2px; overflow:hidden; margin-top:4px; }
+.vbar { height:100%; background:var(--text2); border-radius:2px; opacity:.5; }
+.vbar.me { background:var(--green2); opacity:1; }
+.vttr { text-align:right; min-width:42px; font-size:17px; font-weight:800; color:var(--text0); line-height:1; }
+.vttr.me { color:var(--green2); }
+.vttr small { font-size:9px; color:var(--text2); display:block; font-weight:400; margin-top:2px; }
 
-  /* ── VEREIN TAB ── */
-  .club-teams-grid { display: flex; flex-direction: column; gap: 8px; }
-  .club-team-card {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--bg3); border-radius: 10px; padding: 12px 14px;
-  }
-  .club-team-rank {
-    font-size: 24px; font-weight: 800; color: var(--accent); min-width: 36px; text-align: center;
-  }
-  .club-team-info { flex: 1; }
-  .club-team-name { font-size: 14px; font-weight: 600; }
-  .club-team-liga { font-size: 11px; color: var(--text2); margin-top: 2px; }
-  .club-team-pts { text-align: right; }
-  .club-team-pts-val { font-size: 16px; font-weight: 700; color: var(--text); }
-  .club-team-pts-lbl { font-size: 10px; color: var(--text2); }
-
-  /* ── LOADING / EMPTY ── */
-  .loading {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; padding: 40px 20px; gap: 12px;
-  }
-  .spinner {
-    width: 28px; height: 28px; border: 2px solid var(--border);
-    border-top-color: var(--accent); border-radius: 50%;
-    animation: spin .8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading p { color: var(--text2); font-size: 13px; }
-
-  .empty { text-align: center; padding: 32px 20px; color: var(--text2); font-size: 13px; }
-
-  /* ── ICH TAB: TTR chart ── */
-  #ttr-chart-wrap {
-    width: 100%; height: 120px; position: relative; margin-top: 4px;
-  }
-  #ttr-canvas { width: 100%; height: 100%; }
-
-  /* ── REFRESH BTN ── */
-  .refresh-btn {
-    display: flex; align-items: center; gap: 5px;
-    background: rgba(255,255,255,.05); border: 1px solid var(--border);
-    border-radius: 20px; padding: 5px 12px; color: var(--text2);
-    font-size: 11px; cursor: pointer; transition: all .2s;
-  }
-  .refresh-btn:active { background: rgba(255,255,255,.1); }
-  .refresh-btn svg { width: 13px; height: 13px; }
-
-  /* ── UTIL ── */
-  .row { display: flex; align-items: center; justify-content: space-between; }
-  .mt8 { margin-top: 8px; }
-  .pill {
-    display: inline-flex; align-items: center; padding: 3px 10px;
-    border-radius: 20px; font-size: 11px; font-weight: 600;
-    background: var(--bg3); color: var(--text2);
-  }
+/* Refresh btn */
+.rbtn { display:flex; align-items:center; gap:4px; background:var(--bg3); border:1px solid var(--border);
+  border-radius:20px; padding:4px 10px; color:var(--text2); font-size:11px; cursor:pointer; }
+.rbtn svg { width:12px; height:12px; }
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- TOP BAR -->
-  <header id="topbar">
-    <div id="topbar-left">
-      <div id="topbar-icon">🏓</div>
-      <div>
-        <div id="topbar-title">FC Kollnau</div>
-        <div id="topbar-sub">TTBW · Kreisliga B · 25/26</div>
-      </div>
+<header id="topbar">
+  <div class="tb-left">
+    <div class="tb-icon">🏓</div>
+    <div>
+      <div class="tb-name">FC Kollnau</div>
+      <div class="tb-sub">TTBW · Kreisliga B · 25/26</div>
     </div>
-    <div id="live-badge">
-      <div id="live-dot"></div>
-      <span id="live-time">--:--</span>
-    </div>
-  </header>
+  </div>
+  <div class="tb-time" id="clock">--:--</div>
+</header>
 
-  <!-- CONTENT -->
-  <main id="content">
+<main id="content">
 
-    <!-- HOME -->
-    <div id="tab-home" class="tab-pane active">
-      <!-- TTR Hero -->
-      <div id="hero">
-        <div id="hero-label">Mein TTR-Wert · Markus Reiß</div>
-        <div id="hero-ttr"><span id="ttr-val">—</span><span id="ttr-label">diese Saison</span></div>
-        <div id="hero-sub" style="display:none"></div>
-        <div id="hero-stats">
-          <div class="hero-stat">
-            <div class="hero-stat-val green" id="stat-wins">—</div>
-            <div class="hero-stat-lbl">Siege</div>
-          </div>
-          <div class="hero-stat">
-            <div class="hero-stat-val red" id="stat-losses">—</div>
-            <div class="hero-stat-lbl">Niederl.</div>
-          </div>
-          <div class="hero-stat">
-            <div class="hero-stat-val" id="stat-quote">—</div>
-            <div class="hero-stat-lbl">Quote</div>
-          </div>
-          <div class="hero-stat">
-            <div class="hero-stat-val gold" id="stat-rank">—</div>
-            <div class="hero-stat-lbl">Tabelle</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Nächstes Spiel -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Nächstes Spiel</span>
-          <button class="refresh-btn" onclick="loadAll()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-            Neu laden
-          </button>
-        </div>
-        <div class="card-body" id="next-match-wrap">
-          <div class="loading"><div class="spinner"></div><p>Lade Spiele…</p></div>
-        </div>
-      </div>
-
-      <!-- Mini-Tabelle -->
-      <div class="card">
-        <div class="card-header"><span class="card-title">Tabelle · Kreisliga B</span></div>
-        <div class="card-body" style="padding: 0 0 2px" id="mini-table-wrap">
-          <div class="loading"><div class="spinner"></div><p>Lade Tabelle…</p></div>
-        </div>
-      </div>
-
-      <!-- Letzte Begegnungen -->
-      <div class="card">
-        <div class="card-header"><span class="card-title">Letzte Begegnungen</span></div>
-        <div class="card-body" id="recent-matches-wrap">
-          <div class="loading"><div class="spinner"></div><p>Lade Begegnungen…</p></div>
-        </div>
-      </div>
-    </div><!-- /tab-home -->
-
-    <!-- TABELLE -->
-    <div id="tab-tabelle" class="tab-pane">
-      <div class="card" style="margin-top:4px">
-        <div class="card-header">
-          <span class="card-title">Kreisliga B Gruppe 2</span>
-          <span class="pill">Saison 25/26</span>
-        </div>
-        <div style="padding:0 0 4px" id="full-table-wrap">
-          <div class="loading"><div class="spinner"></div><p>Lade Tabelle…</p></div>
-        </div>
+  <!-- HOME -->
+  <div id="p-home" class="pane active">
+    <div id="hero">
+      <div class="hero-lbl">Mein TTR · Markus Reiß</div>
+      <div class="hero-ttr"><span id="h-ttr">—</span><small id="h-ttr-lbl"></small></div>
+      <div class="hero-grid">
+        <div class="hstat"><div class="hstat-v g" id="h-wins">—</div><div class="hstat-l">Siege</div></div>
+        <div class="hstat"><div class="hstat-v r" id="h-losses">—</div><div class="hstat-l">Niederl.</div></div>
+        <div class="hstat"><div class="hstat-v" id="h-quote">—</div><div class="hstat-l">Quote</div></div>
+        <div class="hstat"><div class="hstat-v gold" id="h-rank">—</div><div class="hstat-l">Platz</div></div>
       </div>
     </div>
 
-    <!-- VEREIN -->
-    <div id="tab-verein" class="tab-pane">
-      <div class="card" style="margin-top:4px">
-        <div class="card-header"><span class="card-title">FC Kollnau · Mannschaften</span></div>
-        <div class="card-body" id="club-teams-wrap">
-          <div class="loading"><div class="spinner"></div><p>Lade Vereinsdaten…</p></div>
-        </div>
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Nächstes Spiel</span>
+        <button class="rbtn" onclick="loadHome()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+          Neu laden
+        </button>
       </div>
+      <div class="card-body" id="next-match"><div class="spin-wrap"><div class="spin"></div></div></div>
     </div>
 
-    <!-- SPIELE -->
-    <div id="tab-spiele" class="tab-pane">
-      <div class="card" style="margin-top:4px">
-        <div class="card-header">
-          <span class="card-title">FC Kollnau III · Spielplan</span>
-        </div>
-        <div class="card-body" id="schedule-wrap">
-          <div class="loading"><div class="spinner"></div><p>Lade Spielplan…</p></div>
-        </div>
-      </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Tabelle · Kreisliga B</span></div>
+      <div id="mini-table"><div class="spin-wrap"><div class="spin"></div></div></div>
     </div>
 
-    <!-- ICH -->
-    <div id="tab-ich" class="tab-pane">
-      <!-- TTR Card -->
-      <div class="card" style="margin-top:4px">
-        <div class="card-header"><span class="card-title">Mein TTR · Markus Reiß</span></div>
-        <div class="card-body">
-          <div id="my-ttr-display" style="font-size:42px;font-weight:800;letter-spacing:-1px;color:var(--text)">—</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px">Letzter bekannter TTR (aus Click-TT)</div>
-        </div>
-      </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Letzte Begegnungen</span></div>
+      <div class="card-body" id="recent"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+  </div>
 
-      <!-- Meine Statistik -->
-      <div class="card">
-        <div class="card-header"><span class="card-title">Saisonbilanz</span></div>
-        <div class="card-body" id="my-stats-wrap">
-          <div class="loading"><div class="spinner"></div><p>Lade Statistik…</p></div>
-        </div>
-      </div>
+  <!-- TABELLE -->
+  <div id="p-tabelle" class="pane">
+    <div class="card" style="margin-top:4px">
+      <div class="card-hd"><span class="card-title">Kreisliga B Gruppe 2 · Saison 25/26</span></div>
+      <div id="full-table"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+  </div>
 
-      <!-- Alle Spieler der Mannschaft -->
-      <div class="card">
-        <div class="card-header"><span class="card-title">FC Kollnau III · Spielerbilanzen</span></div>
-        <div class="card-body" id="player-balances-wrap">
-          <div class="loading"><div class="spinner"></div><p>Lade Bilanzen…</p></div>
-        </div>
+  <!-- VEREIN -->
+  <div id="p-verein" class="pane">
+    <div class="card" style="margin-top:4px">
+      <div class="card-hd">
+        <span class="card-title">FC Kollnau · Vereinsrangliste</span>
+        <span style="font-size:10px;color:var(--text2)" id="verein-count"></span>
       </div>
+      <div class="card-body" id="verein-list"><div class="spin-wrap"><div class="spin"></div><p>Lade Vereinsrangliste…</p></div></div>
+    </div>
+  </div>
 
-      <!-- Aufstellung -->
-      <div class="card">
-        <div class="card-header"><span class="card-title">Gemeldete Aufstellung</span></div>
-        <div class="card-body" id="team-players-wrap">
-          <div class="loading"><div class="spinner"></div><p>Lade Aufstellung…</p></div>
-        </div>
+  <!-- SPIELE -->
+  <div id="p-spiele" class="pane">
+    <div class="card" style="margin-top:4px">
+      <div class="card-hd"><span class="card-title">FC Kollnau III · Alle Spiele 25/26</span></div>
+      <div class="card-body" id="all-matches"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+  </div>
+
+  <!-- ICH -->
+  <div id="p-ich" class="pane">
+    <div class="card" style="margin-top:4px">
+      <div class="card-hd"><span class="card-title">Mein TTR · Markus Reiß</span></div>
+      <div class="card-body">
+        <div id="ich-ttr" style="font-size:44px;font-weight:800;letter-spacing:-2px;color:var(--text0)">—</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">Q-TTR (Saisonstartwert)</div>
       </div>
     </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Meine Saisonbilanz</span></div>
+      <div class="card-body" id="ich-stats"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">FC Kollnau III · Spielerbilanzen</span></div>
+      <div class="card-body" id="ich-bilanzen"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Gemeldete Aufstellung</span></div>
+      <div class="card-body" id="ich-aufstellung"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+  </div>
 
-  </main><!-- /content -->
+</main>
 
-  <!-- BOTTOM NAV -->
-  <nav id="navbar">
-    <button class="nav-btn active" onclick="switchTab('home',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Home
-    </button>
-    <button class="nav-btn" onclick="switchTab('tabelle',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-      Tabelle
-    </button>
-    <button class="nav-btn" onclick="switchTab('verein',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Verein
-    </button>
-    <button class="nav-btn" onclick="switchTab('spiele',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      Spiele
-    </button>
-    <button class="nav-btn" onclick="switchTab('ich',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      Ich
-    </button>
-  </nav>
+<nav id="navbar">
+  <button class="nb on" onclick="nav('home',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
+  </button>
+  <button class="nb" onclick="nav('tabelle',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>Tabelle
+  </button>
+  <button class="nb" onclick="nav('verein',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Verein
+  </button>
+  <button class="nb" onclick="nav('spiele',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Spiele
+  </button>
+  <button class="nb" onclick="nav('ich',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Ich
+  </button>
+</nav>
 
 </div><!-- /app -->
 
-
 <script>
-// ═══════════════════════════════════════════════════════════
-//  CONFIG
-// ═══════════════════════════════════════════════════════════
-const CFG = {
-  proxy:   'https://fckollnau-tt-proxy.vercel.app/api/proxy',
-  teamId:  '2960786',
-  groupId: '494633',
-  season:  '25--26',
-  myName:  'Reiß',
-  assoc:   'TTBW',
-  clubId:  '22036',
-};
+// ── CONFIG ───────────────────────────────────────────────────────────────────
+const P = 'https://fckollnau-tt-proxy.vercel.app/api/proxy';
+const MY_NUID   = 'NU177951';
+const TEAM_ID   = '2960786';
+const GROUP_ID  = '494633';
 
-// ═══════════════════════════════════════════════════════════
-//  FETCH – action-based proxy (server handles JSON+HTML)
-// ═══════════════════════════════════════════════════════════
-async function proxyAction(action, extra = {}) {
-  const p = new URLSearchParams({ action,
-    groupId: CFG.groupId, teamId: CFG.teamId,
-    assoc: CFG.assoc, season: CFG.season, clubId: CFG.clubId,
-    ...extra });
-  const r = await fetch(`${CFG.proxy}?${p}`);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+// All 5 FC Kollnau teams for Vereinsrangliste
+const FC_TEAMS = [
+  { name:'FC Kollnau I',   id:'2959788', grp:'494496' },
+  { name:'FC Kollnau II',  id:'2960599', grp:'494202' },
+  { name:'FC Kollnau III', id:'2960786', grp:'494633' },
+  { name:'FC Kollnau IV',  id:'2959922', grp:'494684' },
+  { name:'FC Kollnau V',   id:'2992085', grp:'502100' },
+];
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+function loading(id) { $(id).innerHTML = '<div class="spin-wrap"><div class="spin"></div></div>'; }
+function empty(id, msg) { $(id).innerHTML = `<div class="empty">${msg}</div>`; }
+
+// Fetch via proxy (generic)
+async function pget(url) {
+  const r = await fetch(`${P}?url=${encodeURIComponent(url)}`);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+// Fetch via proxy action
+async function pact(action, params = {}) {
+  const qs = new URLSearchParams({ action, ...params }).toString();
+  const r = await fetch(`${P}?${qs}`);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
   return r.json();
 }
 
-// ═══════════════════════════════════════════════════════════
-//  NAV
-// ═══════════════════════════════════════════════════════════
-const loaded = {};
-function switchTab(name, btn) {
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  btn.classList.add('active');
-  if (!loaded[name]) { loaded[name] = true; loadTab(name); }
-}
-
-// ═══════════════════════════════════════════════════════════
-//  CLOCK
-// ═══════════════════════════════════════════════════════════
-function startClock() {
-  const el = document.getElementById('live-time');
-  const tick = () => { el.textContent = new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}); };
-  tick(); setInterval(tick, 30000);
-}
-
-// ═══════════════════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════════════════
 function fmtDate(iso) {
-  if (!iso) return {d:'?', m:'?'};
+  if (!iso) return { d:'?', m:'?', time:'?' };
   const dt = new Date(iso);
   return {
-    d: dt.getDate().toString().padStart(2,'0'),
-    m: dt.toLocaleString('de-DE',{month:'short'}),
-    time: dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
+    d:    dt.getDate().toString().padStart(2,'0'),
+    m:    dt.toLocaleString('de-DE',{month:'short'}),
+    time: dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}),
+    past: dt < new Date(),
   };
 }
 
-function loading(id) {
-  document.getElementById(id).innerHTML = '<div class="loading"><div class="spinner"></div><p>Lade…</p></div>';
-}
-function err(id, msg) {
-  document.getElementById(id).innerHTML = `<div class="empty">${msg || 'Fehler beim Laden'}</div>`;
-}
+// ── NAV ──────────────────────────────────────────────────────────────────────
+const loaded = { home: false, tabelle: false, verein: false, spiele: false, ich: false };
 
-// ═══════════════════════════════════════════════════════════
-//  TABELLE
-// ═══════════════════════════════════════════════════════════
-let tableRows = null;
-
-async function loadTable() {
-  const res = await proxyAction('tabelle');
-  // proxy returns { ok, source, league_table: [] }
-  const rows = res?.league_table || res?.data?.data?.league_table || [];
-  tableRows = rows;
-  return rows;
-}
-
-function renderMiniTable(rows) {
-  if (!rows.length) { err('mini-table-wrap','Keine Tabellendaten'); return; }
-  const myRow = rows.find(r => String(r.team_id) === CFG.teamId);
-  document.getElementById('stat-rank').textContent = myRow ? `#${myRow.table_rank}` : '—';
-
-  const idx = myRow ? rows.indexOf(myRow) : 0;
-  const slice = rows.slice(Math.max(0, idx-1), Math.min(rows.length, idx+4));
-
-  document.getElementById('mini-table-wrap').innerHTML = `
-    <table class="league-table">
-      <thead><tr><th></th><th>Mannschaft</th><th class="num">Pkt</th><th class="num">S:N</th></tr></thead>
-      <tbody>${slice.map(r => {
-        const me = String(r.team_id) === CFG.teamId || r.team_name?.includes('Kollnau III');
-        return `<tr class="${me?'my-team':''}">
-          <td><span class="rank-num ${r.table_rank<=2?'top':''}">${r.table_rank}.</span></td>
-          <td class="team-name ${me?'mine':''}">${r.team_name||'?'}${me?' 🏓':''}</td>
-          <td class="num pts">${r.points_won||0}:${r.points_lost||0}</td>
-          <td class="num ratio">${r.meetings_won||0}:${r.meetings_lost||0}</td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table>`;
-}
-
-function renderFullTable(rows) {
-  if (!rows.length) { err('full-table-wrap','Keine Daten'); return; }
-  document.getElementById('full-table-wrap').innerHTML = `
-    <table class="league-table">
-      <thead><tr><th></th><th>Mannschaft</th><th class="num">Pkt</th><th class="num">S:U:N</th><th class="num">Spiele</th></tr></thead>
-      <tbody>${rows.map(r => {
-        const me = String(r.team_id) === CFG.teamId || r.team_name?.includes('Kollnau III');
-        return `<tr class="${me?'my-team':''}">
-          <td><span class="rank-num ${r.table_rank<=2?'top':''}">${r.table_rank}.</span></td>
-          <td class="team-name ${me?'mine':''}">${r.team_name||'?'}${me?' 🏓':''}</td>
-          <td class="num pts">${r.points_won||0}:${r.points_lost||0}</td>
-          <td class="num ratio">${r.meetings_won||0}:${r.meetings_tie||0}:${r.meetings_lost||0}</td>
-          <td class="num ratio">${r.matches_won||0}:${r.matches_lost||0}</td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table>`;
-}
-
-// ═══════════════════════════════════════════════════════════
-//  SPIELPLAN
-// ═══════════════════════════════════════════════════════════
-let meetings = null;
-
-async function loadSchedule() {
-  const res = await proxyAction('spielplan');
-  const data = res?.meetings || [];
-  meetings = data;
-  return data;
-}
-
-function renderNextMatch(list) {
-  const now = new Date();
-  const next = list.filter(m => new Date(m.date) > now)
-                   .sort((a,b) => new Date(a.date)-new Date(b.date))[0];
-  if (!next) { err('next-match-wrap','Keine kommenden Spiele'); return; }
-
-  const dt = fmtDate(next.date);
-  const home = String(next.team_home_id) === CFG.teamId;
-  const opp  = home ? next.team_away : next.team_home;
-
-  document.getElementById('next-match-wrap').innerHTML = `
-    <div class="next-match">
-      <div class="next-match-date">
-        <div class="next-match-day">${dt.d}</div>
-        <div class="next-match-mon">${dt.m}</div>
-      </div>
-      <div class="next-match-divider"></div>
-      <div class="next-match-info">
-        <div class="next-match-vs">${opp || 'Gegner unbekannt'}</div>
-        <div class="next-match-meta">${dt.time} Uhr &nbsp;<span class="badge ${home?'badge-home':'badge-away'}">${home?'Heim':'Auswärts'}</span></div>
-      </div>
-    </div>`;
-}
-
-function renderRecentMatches(list) {
-  const now = new Date();
-  const past = list.filter(m => new Date(m.date) < now && m.matches_won != null)
-                   .sort((a,b) => new Date(b.date)-new Date(a.date))
-                   .slice(0,5);
-  if (!past.length) { err('recent-matches-wrap','Keine Begegnungen geladen'); return; }
-
-  document.getElementById('recent-matches-wrap').innerHTML = past.map(m => {
-    const dt = fmtDate(m.date);
-    const home = String(m.team_home_id) === CFG.teamId;
-    const opp  = home ? m.team_away : m.team_home;
-    const myW  = parseInt(home ? m.matches_won : m.matches_lost)||0;
-    const myL  = parseInt(home ? m.matches_lost : m.matches_won)||0;
-    const win  = myW > myL;
-    return `<div class="match-item">
-      <div class="match-date-col"><div class="match-date-d">${dt.d}</div><div class="match-date-m">${dt.m}</div></div>
-      <div class="match-teams"><strong>${opp||'Gegner'}</strong><span><span class="badge ${home?'badge-home':'badge-away'}">${home?'Heim':'Auswärts'}</span></span></div>
-      <div class="match-result"><div class="result-score ${win?'result-win':'result-loss'}">${myW}:${myL}</div></div>
-    </div>`;
-  }).join('');
-}
-
-function renderSchedule(list) {
-  if (!list.length) { err('schedule-wrap','Kein Spielplan'); return; }
-  const now = new Date();
-  // Newest first (jüngster Termin oben)
-  const sorted = [...list].sort((a,b) => new Date(b.date)-new Date(a.date));
-  document.getElementById('schedule-wrap').innerHTML = sorted.map(m => {
-    const dt = fmtDate(m.date);
-    const past = new Date(m.date) < now;
-    const home = String(m.team_home_id) === CFG.teamId;
-    const opp  = home ? m.team_away : m.team_home;
-    let right;
-    if (past && m.matches_won != null) {
-      const myW = parseInt(home?m.matches_won:m.matches_lost)||0;
-      const myL = parseInt(home?m.matches_lost:m.matches_won)||0;
-      right = `<div class="match-result"><div class="result-score ${myW>myL?'result-win':'result-loss'}">${myW}:${myL}</div><div style="font-size:10px;color:var(--text2)">${myW>myL?'Sieg':'Niederl.'}</div></div>`;
-    } else if (past) {
-      right = `<div class="match-result"><div class="result-pending">ausstehend</div></div>`;
-    } else {
-      right = `<div class="match-result"><div class="result-pending">${dt.time}<br>Uhr</div></div>`;
-    }
-    return `<div class="match-item">
-      <div class="match-date-col"><div class="match-date-d">${dt.d}</div><div class="match-date-m">${dt.m}</div></div>
-      <div class="match-teams"><strong>${opp||'?'}</strong><span><span class="badge ${home?'badge-home':'badge-away'}">${home?'Heim':'Auswärts'}</span></span></div>
-      ${right}
-    </div>`;
-  }).join('');
-}
-
-// ═══════════════════════════════════════════════════════════
-//  BILANZEN
-// ═══════════════════════════════════════════════════════════
-async function loadBilanzen() {
-  const res = await proxyAction('bilanzen');
-  // proxy returns { ok, players: [ { player_id, player_firstname, player_lastname, points_won, points_lost } ] }
-  return res?.players || [];
-}
-
-function renderBilanzen(balances) {
-  if (!balances.length) { err('player-balances-wrap','Keine Bilanzdaten'); err('my-stats-wrap',''); return; }
-
-  const me = balances.find(p =>
-    (p.player_lastname||'').toLowerCase().includes(CFG.myName.toLowerCase())
-  );
-  if (me) {
-    const w = parseInt(me.points_won)||0, l = parseInt(me.points_lost)||0;
-    const q = w+l > 0 ? Math.round(w/(w+l)*100)+'%' : '—';
-    document.getElementById('stat-wins').textContent = w;
-    document.getElementById('stat-losses').textContent = l;
-    document.getElementById('stat-quote').textContent = q;
-    document.getElementById('my-stats-wrap').innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        <div class="hero-stat"><div class="hero-stat-val green">${w}</div><div class="hero-stat-lbl">Siege</div></div>
-        <div class="hero-stat"><div class="hero-stat-val red">${l}</div><div class="hero-stat-lbl">Niederlagen</div></div>
-        <div class="hero-stat"><div class="hero-stat-val">${q}</div><div class="hero-stat-lbl">Quote</div></div>
-      </div>`;
-  } else {
-    err('my-stats-wrap','Markus Reiß nicht gefunden');
-  }
-
-  const sorted = [...balances].sort((a,b)=>(parseInt(b.points_won)||0)-(parseInt(a.points_won)||0));
-  document.getElementById('player-balances-wrap').innerHTML = sorted.map((p,i) => {
-    const mine = (p.player_lastname||'').toLowerCase().includes(CFG.myName.toLowerCase());
-    const name = [p.player_firstname, p.player_lastname].filter(Boolean).join(' ') || p.player_id || '?';
-    return `<div class="player-row">
-      <div class="player-rank-badge ${mine?'me':''}">${i+1}</div>
-      <div class="player-name ${mine?'me':''}">${name}${mine?' 🏓':''}</div>
-      <div class="player-wl"><span class="wl-win">${p.points_won||0}</span><span class="wl-sep">:</span><span class="wl-loss">${p.points_lost||0}</span></div>
-    </div>`;
-  }).join('');
-}
-
-// ═══════════════════════════════════════════════════════════
-//  VEREIN
-// ═══════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════
-//  VEREINSRANGLISTE – client-side (Proxy-Timeout umgehen)
-// ═══════════════════════════════════════════════════════════
-const ALLE_TEAMS = [
-  { name: 'FC Kollnau I',   teamId: '2959788', groupId: '494496' },
-  { name: 'FC Kollnau II',  teamId: '2960599', groupId: '494202' },
-  { name: 'FC Kollnau III', teamId: '2960786', groupId: '494633' },
-  { name: 'FC Kollnau IV',  teamId: '2959922', groupId: '494684' },
-  { name: 'FC Kollnau V',   teamId: '2992085', groupId: '502100' },
-];
-
-async function fetchBilanzenTeam(team) {
-  const _data = 'routes/click-tt+/$association+/$season+/$type+/($groupname).gruppe.$urlid_.mannschaft.$teamid.$teamname+/spielerbilanzen.$filter';
-  const url = `https://www.mytischtennis.de/click-tt/TTBW/25--26/ligen/x/gruppe/${team.groupId}/mannschaft/${team.teamId}/x/spielerbilanzen/gesamt?_data=${encodeURIComponent(_data)}`;
-  const res = await fetch(`${CFG.proxy}?url=${encodeURIComponent(url)}`);
-  if (!res.ok) return [];
-  const json = await res.json();
-  const bs = json?.data?.balancesheet || [];
-  const myTeam = bs.find(t => String(t.team_id) === team.teamId) || bs[0];
-  return (myTeam?.single_player_statistics || []).map(p => ({
-    player_id: p.player_id,
-    firstname: p.player_firstname || '',
-    lastname:  p.player_lastname  || '',
-    team:      team.name,
-    wins:      parseInt(p.points_won  || 0),
-    losses:    parseInt(p.points_lost || 0),
-    q_ttr:     null,
-  }));
-}
-
-async function fetchQTTR(playerId) {
-  try {
-    const url = `https://www.mytischtennis.de/click-tt/spieler/${playerId}/spielerportrait`;
-    const res = await fetch(`${CFG.proxy}?url=${encodeURIComponent(url)}`);
-    const text = await res.text();
-    // Q-TTR-Wert appears in HTML followed by the number
-    const m = text.match(/Q-TTR-Wert[\s\S]{0,300}?([0-9]{3,4})/);
-    return m ? parseInt(m[1]) : null;
-  } catch { return null; }
-}
-
-async function loadVereinsTeams() {
-  // Step 1: collect all players from all 5 teams
-  const results = await Promise.allSettled(ALLE_TEAMS.map(fetchBilanzenTeam));
-  const playerMap = {};
-  for (const r of results) {
-    if (r.status !== 'fulfilled') continue;
-    for (const p of r.value) {
-      if (!p.player_id) continue;
-      if (!playerMap[p.player_id]) playerMap[p.player_id] = { ...p };
-      else {
-        playerMap[p.player_id].wins   += p.wins;
-        playerMap[p.player_id].losses += p.losses;
-      }
-    }
-  }
-  const players = Object.values(playerMap);
-
-  // Step 2: fetch Q-TTR for each player (batches of 5)
-  for (let i = 0; i < players.length; i += 5) {
-    await Promise.all(players.slice(i, i + 5).map(async p => {
-      p.q_ttr = await fetchQTTR(p.player_id);
-    }));
-    // Update UI progressively
-    const sorted = [...players].sort((a,b) => (b.q_ttr||0) - (a.q_ttr||0));
-    renderVereinsTeams(sorted, true);
-  }
-
-  // Final sort
-  players.sort((a,b) => {
-    if (!a.q_ttr && !b.q_ttr) return 0;
-    if (!a.q_ttr) return 1;
-    if (!b.q_ttr) return -1;
-    return b.q_ttr - a.q_ttr;
-  });
-  return players;
-}
-
-function renderVereinsTeams(players, isPartial = false) {
-  const wrap = document.getElementById('club-teams-wrap');
-  if (!players?.length) { err('club-teams-wrap', 'Keine Spielerdaten'); return; }
-
-  const myNUID = 'NU177951';
-  const maxTTR = Math.max(...players.filter(p => p.q_ttr).map(p => p.q_ttr));
-
-  wrap.innerHTML = `
-    <div style="margin-bottom:14px">
-      <div style="font-size:22px;font-weight:800;letter-spacing:-1px">FC Kollnau</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:2px">Vereinsrangliste · TTBW · Saison 25/26 · ${players.length} Spieler</div>
-    </div>
-    ${players.map((p, i) => {
-      const isMe = p.player_id === myNUID;
-      const name = (p.firstname + ' ' + p.lastname).trim() || p.player_id;
-      const ttr  = p.q_ttr ?? '–';
-      const barW = p.q_ttr ? Math.round(p.q_ttr / maxTTR * 100) : 0;
-      const total = p.wins + p.losses;
-      const quote = total > 0 ? Math.round(p.wins / total * 100) + '%' : '–';
-      return \`<div class="player-row" style="${isMe ? 'background:rgba(29,185,84,.06);border-radius:8px;margin:0 -4px;padding:10px 4px;' : ''}">\`
-        + \`<div class="player-rank-badge ${isMe ? 'me' : ''}">${i + 1}</div>\`
-        + \`<div style="flex:1;min-width:0">\`
-        + \`  <div class="player-name ${isMe ? 'me' : ''}" style="font-size:13px">${name}${isMe ? ' 🏓' : ''}</div>\`
-        + \`  <div style="font-size:10px;color:var(--text2);margin-top:2px">${p.team} · ${p.wins}S / ${p.losses}N · ${quote}</div>\`
-        + \`  <div style="margin-top:5px;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden">\`
-        + \`    <div style="width:${barW}%;height:100%;background:${isMe ? 'var(--accent)' : 'var(--text2)'};opacity:${isMe ? 1 : 0.5};transition:width .4s"></div>\`
-        + \`  </div>\`
-        + \`</div>\`
-        + \`<div style="text-align:right;min-width:44px">\`
-        + \`  <div style="font-size:18px;font-weight:800;color:${isMe ? 'var(--accent)' : 'var(--text)'}">${ttr}</div>\`
-        + \`  <div style="font-size:9px;color:var(--text2)">Q-TTR</div>\`
-        + \`</div>\`
-        + \`</div>\`;
-    }).join('')}
-    ${isPartial ? '<div style="text-align:center;padding:12px;color:var(--text2);font-size:12px"><div class="spinner" style="display:inline-block;width:14px;height:14px;border-width:2px;margin-right:6px;vertical-align:middle"></div>Lade Q-TTR Werte…</div>' : ''}
-  `;
-}
-
-// ═══════════════════════════════════════════════════════════
-//  TTR (aus Mannschaftsmeldungen – Q-TTR)
-// ═══════════════════════════════════════════════════════════
-async function loadMyTTR() {
-  try {
-    const res = await proxyAction('meldungen');
-    const players = res?.players || [];
-    const me = players.find(p =>
-      (p.player_lastname||p.lastname||'').toLowerCase().includes(CFG.myName.toLowerCase())
-    );
-    // q_ttr is the Q-TTR from Meldung
-    return me?.q_ttr || me?.fed_rank || me?.ttr || null;
-  } catch { return null; }
-}
-
-// ═══════════════════════════════════════════════════════════
-//  MAIN LOAD
-// ═══════════════════════════════════════════════════════════
-function resetHomeLoaders() {
-  loading('next-match-wrap'); loading('mini-table-wrap'); loading('recent-matches-wrap');
-}
-
-async function loadAll() {
-  resetHomeLoaders();
-
-  // Tabelle
-  loadTable()
-    .then(rows => { renderMiniTable(rows); if (loaded['tabelle']) renderFullTable(rows); })
-    .catch(e => { console.error('Tabelle:', e); err('mini-table-wrap','Tabelle konnte nicht geladen werden'); });
-
-  // Spielplan
-  loadSchedule()
-    .then(list => { renderNextMatch(list); renderRecentMatches(list); if (loaded['spiele']) renderSchedule(list); })
-    .catch(e => { console.error('Spielplan:', e); err('next-match-wrap','Spielplan konnte nicht geladen werden'); err('recent-matches-wrap',''); });
-
-  // Bilanzen (für Hero-Stats)
-  loadBilanzen()
-    .catch(() => {});
-
-  // TTR-Fallback: bekannter Wert 1316 wenn API keine Daten liefert
-  setTimeout(() => {
-    if (document.getElementById("ttr-val").textContent === "—") {
-      document.getElementById("ttr-val").textContent = "1316";
-    }
-    if (document.getElementById("my-ttr-display").textContent === "—") {
-      document.getElementById("my-ttr-display").textContent = "1316";
-    }
-  }, 4000);
+function nav(name, btn) {
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
+  $('p-' + name).classList.add('active');
+  btn.classList.add('on');
+  if (!loaded[name]) { loaded[name] = true; loadTab(name); }
 }
 
 async function loadTab(name) {
-  if (name === 'tabelle') {
-    if (tableRows?.length) renderFullTable(tableRows);
-    else loadTable().then(renderFullTable).catch(() => err('full-table-wrap','Fehler'));
+  if (name === 'tabelle') loadTabelle();
+  if (name === 'verein')  loadVerein();
+  if (name === 'spiele')  loadSpiele();
+  if (name === 'ich')     loadIch();
+}
+
+// ── CLOCK ────────────────────────────────────────────────────────────────────
+function startClock() {
+  const el = $('clock');
+  const tick = () => el.textContent = new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  tick(); setInterval(tick, 30000);
+}
+
+// ── HOME ─────────────────────────────────────────────────────────────────────
+async function loadHome() {
+  // 1. Tabelle (für Rang + Mini-Tabelle)
+  pget('https://www.mytischtennis.de/api/league-table/TTBW/' + GROUP_ID)
+    .then(data => {
+      const rows = data?.data || [];
+      const me = rows.find(r => r.team_name?.includes('Kollnau III'));
+      if (me) { $('h-rank').textContent = '#' + me.table_rank; }
+      renderMiniTable(rows, me?.table_rank);
+    })
+    .catch(() => empty('mini-table', 'Tabelle konnte nicht geladen werden'));
+
+  // 2. Spielplan (vollständig via Proxy-Action)
+  pact('spielplan', { groupId: GROUP_ID, teamId: TEAM_ID })
+    .then(data => {
+      const meetings = data?.meetings || [];
+      renderNextMatch(meetings);
+      renderRecent(meetings);
+    })
+    .catch(() => {
+      empty('next-match', 'Spielplan konnte nicht geladen werden');
+      empty('recent', '');
+    });
+
+  // 3. Bilanzen → Siege/Niederlagen/Quote für Markus Reiß
+  pact('bilanzen', { groupId: GROUP_ID, teamId: TEAM_ID })
+    .then(data => {
+      const players = data?.players || [];
+      const me = players.find(p => p.player_id === MY_NUID);
+      if (me) {
+        const w = parseInt(me.points_won || 0);
+        const l = parseInt(me.points_lost || 0);
+        $('h-wins').textContent = w;
+        $('h-losses').textContent = l;
+        $('h-quote').textContent = (w + l) > 0 ? Math.round(w/(w+l)*100) + '%' : '—';
+      }
+    })
+    .catch(() => {});
+
+  // 4. Q-TTR via Spielersuche
+  fetch(`${P}?action=suche&query=${encodeURIComponent('Markus Reiß')}`)
+    .then(r => r.json())
+    .then(data => {
+      const me = (data?.results || []).find(p => p.internal_id === MY_NUID || (p.lastname?.includes('Reiß') && p.firstname?.includes('Markus')));
+      if (me?.fed_rank) {
+        $('h-ttr').textContent = me.fed_rank;
+        $('ich-ttr').textContent = me.fed_rank;
+        $('h-ttr-lbl').textContent = 'Q-TTR';
+      }
+    })
+    .catch(() => {
+      $('h-ttr').textContent = '1316';
+      $('ich-ttr').textContent = '1316';
+      $('h-ttr-lbl').textContent = 'Q-TTR';
+    });
+}
+
+function renderMiniTable(rows, myRank) {
+  if (!rows.length) { empty('mini-table', 'Keine Daten'); return; }
+  const myIdx = myRank ? rows.findIndex(r => r.table_rank == myRank) : -1;
+  const start = Math.max(0, myIdx - 1);
+  const slice = rows.slice(start, start + 5);
+  $('mini-table').innerHTML = `<table class="ttbl">
+    <thead><tr><th></th><th>Mannschaft</th><th class="r">Platz</th></tr></thead>
+    <tbody>${slice.map(r => {
+      const me = r.team_name?.includes('Kollnau III');
+      return `<tr class="${me?'me':''}">
+        <td><span class="rank ${r.table_rank<=2?'top':''}">${r.table_rank}.</span></td>
+        <td class="tname ${me?'me':''}">${r.team_name}${me?' 🏓':''}</td>
+        <td class="r" style="color:var(--text2);font-size:12px">${r.table_rank <= 2 ? '↑' : ''}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+function renderNextMatch(meetings) {
+  const now = new Date();
+  const next = meetings.filter(m => new Date(m.date) > now)
+                       .sort((a,b) => new Date(a.date)-new Date(b.date))[0];
+  if (!next) { empty('next-match', 'Keine weiteren Spiele in dieser Saison'); return; }
+  const dt = fmtDate(next.date);
+  const home = next.team_home_id == TEAM_ID;
+  const opp = home ? next.team_away : next.team_home;
+  $('next-match').innerHTML = `<div class="nmatch">
+    <div class="nmatch-d"><div class="nmatch-day">${dt.d}</div><div class="nmatch-mon">${dt.m}</div></div>
+    <div class="nmatch-div"></div>
+    <div class="nmatch-info">
+      <div class="nmatch-vs">${opp || '?'}</div>
+      <div class="nmatch-meta">${dt.time} Uhr · <span class="badge ${home?'bh':'ba'}">${home?'Heim':'Auswärts'}</span></div>
+    </div>
+  </div>`;
+}
+
+function renderRecent(meetings) {
+  const now = new Date();
+  const past = meetings.filter(m => new Date(m.date) < now && m.matches_won != null)
+                       .sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,5);
+  if (!past.length) { empty('recent', 'Noch keine gespielten Begegnungen'); return; }
+  $('recent').innerHTML = past.map(m => matchRow(m)).join('');
+}
+
+function matchRow(m) {
+  const dt = fmtDate(m.date);
+  const home = m.team_home_id == TEAM_ID;
+  const opp = home ? m.team_away : m.team_home;
+  const myW = parseInt(home ? m.matches_won : m.matches_lost) || 0;
+  const myL = parseInt(home ? m.matches_lost : m.matches_won) || 0;
+  const win = myW > myL;
+  return `<div class="mrow">
+    <div class="mdate"><div class="mdate-d">${dt.d}</div><div class="mdate-m">${dt.m}</div></div>
+    <div class="mteam"><strong>${opp||'?'}</strong><span><span class="badge ${home?'bh':'ba'}">${home?'Heim':'Auswärts'}</span></span></div>
+    <div class="mres"><div class="mres-score ${win?'g':'r'}">${myW}:${myL}</div></div>
+  </div>`;
+}
+
+// ── TABELLE ──────────────────────────────────────────────────────────────────
+async function loadTabelle() {
+  try {
+    const data = await pget('https://www.mytischtennis.de/api/league-table/TTBW/' + GROUP_ID);
+    const rows = data?.data || [];
+    if (!rows.length) { empty('full-table', 'Keine Tabellendaten'); return; }
+    $('full-table').innerHTML = `<table class="ttbl">
+      <thead><tr><th>#</th><th>Mannschaft</th></tr></thead>
+      <tbody>${rows.map(r => {
+        const me = r.team_name?.includes('Kollnau III');
+        return `<tr class="${me?'me':''}">
+          <td><span class="rank ${r.table_rank<=2?'top':''}">${r.table_rank}.</span></td>
+          <td class="tname ${me?'me':''}">${r.team_name}${me?' 🏓':''}</td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  } catch(e) { empty('full-table', 'Fehler: ' + e.message); }
+}
+
+// ── SPIELE ───────────────────────────────────────────────────────────────────
+async function loadSpiele() {
+  try {
+    const data = await pact('spielplan', { groupId: GROUP_ID, teamId: TEAM_ID });
+    const meetings = (data?.meetings || []).sort((a,b) => new Date(b.date)-new Date(a.date));
+    if (!meetings.length) { empty('all-matches', 'Keine Spiele gefunden'); return; }
+    const now = new Date();
+    $('all-matches').innerHTML = meetings.map(m => {
+      const dt = fmtDate(m.date);
+      const home = m.team_home_id == TEAM_ID;
+      const opp = home ? m.team_away : m.team_home;
+      const past = new Date(m.date) < now;
+      let right = '';
+      if (past && m.matches_won != null) {
+        const myW = parseInt(home?m.matches_won:m.matches_lost)||0;
+        const myL = parseInt(home?m.matches_lost:m.matches_won)||0;
+        right = `<div class="mres"><div class="mres-score ${myW>myL?'g':'r'}">${myW}:${myL}</div><div class="mres-lbl">${myW>myL?'Sieg':'Niederl.'}</div></div>`;
+      } else {
+        right = `<div class="mres"><div class="mres-pending">${dt.time}<br>Uhr</div></div>`;
+      }
+      return `<div class="mrow">
+        <div class="mdate"><div class="mdate-d">${dt.d}</div><div class="mdate-m">${dt.m}</div></div>
+        <div class="mteam"><strong>${opp||'?'}</strong><span><span class="badge ${home?'bh':'ba'}">${home?'Heim':'Auswärts'}</span></span></div>
+        ${right}
+      </div>`;
+    }).join('');
+  } catch(e) { empty('all-matches', 'Fehler: ' + e.message); }
+}
+
+// ── VEREIN ───────────────────────────────────────────────────────────────────
+async function loadVerein() {
+  // Collect players from all 5 teams via Bilanzen, then search Q-TTR per player
+  const playerMap = {};
+
+  // Step 1: all 5 teams parallel
+  const results = await Promise.allSettled(FC_TEAMS.map(t =>
+    pact('bilanzen', { groupId: t.grp, teamId: t.id }).then(d => ({ team: t, players: d?.players || [] }))
+  ));
+
+  for (const r of results) {
+    if (r.status !== 'fulfilled') continue;
+    const { team, players } = r.value;
+    for (const p of players) {
+      if (!p.player_id) continue;
+      if (!playerMap[p.player_id]) {
+        playerMap[p.player_id] = {
+          id: p.player_id,
+          name: (p.player_firstname + ' ' + p.player_lastname).trim(),
+          team: team.name,
+          wins: 0, losses: 0, q_ttr: null,
+        };
+      }
+      playerMap[p.player_id].wins   += parseInt(p.points_won  || 0);
+      playerMap[p.player_id].losses += parseInt(p.points_lost || 0);
+    }
   }
-  if (name === 'verein') {
-    document.getElementById('club-teams-wrap').innerHTML = '<div class="loading"><div class="spinner"></div><p>Lade Vereinsrangliste…</p></div>';
-    loadVereinsTeams().then(players => renderVereinsTeams(players, false)).catch(e => { console.error(e); err('club-teams-wrap','Fehler: ' + e.message); });
-  }
-  if (name === 'spiele') {
-    if (meetings?.length) renderSchedule(meetings);
-    else loadSchedule().then(renderSchedule).catch(() => err('schedule-wrap','Fehler'));
-  }
-  if (name === 'ich') {
-    loading('player-balances-wrap'); loading('my-stats-wrap');
-    loadBilanzen().then(renderBilanzen).catch(() => { err('player-balances-wrap','Fehler'); err('my-stats-wrap','Fehler'); });
-    loadMyTTR().then(ttr => { if (ttr) { document.getElementById('ttr-val').textContent = ttr; document.getElementById('my-ttr-display').textContent = ttr; } }).catch(()=>{});
+
+  const players = Object.values(playerMap);
+  if (!players.length) { empty('verein-list', 'Keine Spielerdaten gefunden'); return; }
+
+  // Show placeholder list immediately
+  renderVerein(players, true);
+
+  // Step 2: fetch Q-TTR via search (POST /api/search/players gives fed_rank = Q-TTR)
+  // Process in batches of 4 to stay under rate limit
+  for (let i = 0; i < players.length; i += 4) {
+    await Promise.all(players.slice(i, i + 4).map(async p => {
+      try {
+        const lastName = p.name.split(' ').pop();
+        const d = await pact('suche', { query: lastName });
+        const hit = (d?.results || []).find(r => r.internal_id === p.id);
+        if (hit?.fed_rank) p.q_ttr = parseInt(hit.fed_rank);
+      } catch {}
+    }));
+    // Progressive render
+    const sorted = [...players].sort((a,b) => (b.q_ttr||0)-(a.q_ttr||0));
+    renderVerein(sorted, i + 4 < players.length);
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════
+function renderVerein(players, loading = false) {
+  const withTTR = players.filter(p => p.q_ttr);
+  const maxTTR = withTTR.length ? Math.max(...withTTR.map(p => p.q_ttr)) : 1;
+  $('verein-count').textContent = `${players.length} Spieler`;
+  $('verein-list').innerHTML = players.map((p, i) => {
+    const isMe = p.id === MY_NUID;
+    const barW = p.q_ttr ? Math.round(p.q_ttr / maxTTR * 100) : 0;
+    const total = p.wins + p.losses;
+    const quote = total > 0 ? Math.round(p.wins/total*100)+'%' : '–';
+    return `<div class="vrow ${isMe?'me':''}">
+      <div class="pnum ${isMe?'me':''}">${i+1}</div>
+      <div class="vname-wrap">
+        <div class="vname ${isMe?'me':''}">${p.name}${isMe?' 🏓':''}</div>
+        <div class="vteam">${p.team} · ${p.wins}S ${p.losses}N · ${quote}</div>
+        <div class="vbar-wrap"><div class="vbar ${isMe?'me':''}" style="width:${barW}%"></div></div>
+      </div>
+      <div class="vttr ${isMe?'me':''}">${p.q_ttr || '–'}<small>Q-TTR</small></div>
+    </div>`;
+  }).join('') + (loading ? '<div class="spin-wrap" style="padding:16px"><div class="spin"></div><p>Lade Q-TTR…</p></div>' : '');
+}
+
+// ── ICH ──────────────────────────────────────────────────────────────────────
+async function loadIch() {
+  // Q-TTR
+  fetch(`${P}?action=suche&query=${encodeURIComponent('Markus Reiß')}`)
+    .then(r => r.json())
+    .then(data => {
+      const me = (data?.results || []).find(p => p.internal_id === MY_NUID);
+      if (me?.fed_rank) {
+        $('h-ttr').textContent = me.fed_rank;
+        $('ich-ttr').textContent = me.fed_rank;
+        $('h-ttr-lbl').textContent = 'Q-TTR';
+      }
+    }).catch(() => {});
+
+  // Bilanzen
+  pact('bilanzen', { groupId: GROUP_ID, teamId: TEAM_ID })
+    .then(data => {
+      const players = data?.players || [];
+      const me = players.find(p => p.player_id === MY_NUID);
+
+      if (me) {
+        const w = parseInt(me.points_won || 0);
+        const l = parseInt(me.points_lost || 0);
+        const q = (w+l) > 0 ? Math.round(w/(w+l)*100)+'%' : '—';
+        $('h-wins').textContent = w;
+        $('h-losses').textContent = l;
+        $('h-quote').textContent = q;
+        $('ich-stats').innerHTML = `
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div class="hstat"><div class="hstat-v g">${w}</div><div class="hstat-l">Siege</div></div>
+            <div class="hstat"><div class="hstat-v r">${l}</div><div class="hstat-l">Niederlagen</div></div>
+            <div class="hstat"><div class="hstat-v">${q}</div><div class="hstat-l">Quote</div></div>
+          </div>`;
+      } else {
+        empty('ich-stats', 'Keine Daten für Markus Reiß');
+      }
+
+      // Alle Spieler
+      const sorted = [...players].sort((a,b) => parseInt(b.points_won||0)-parseInt(a.points_won||0));
+      $('ich-bilanzen').innerHTML = sorted.map((p,i) => {
+        const isMe = p.player_id === MY_NUID;
+        const name = (p.player_firstname + ' ' + p.player_lastname).trim();
+        return `<div class="prow">
+          <div class="pnum ${isMe?'me':''}">${i+1}</div>
+          <div class="pname ${isMe?'me':''}">${name}${isMe?' 🏓':''}</div>
+          <div class="pwl"><span class="g">${p.points_won||0}</span><span style="color:var(--text2);font-size:11px">:</span><span class="r">${p.points_lost||0}</span></div>
+        </div>`;
+      }).join('');
+    })
+    .catch(e => { empty('ich-stats', 'Fehler: ' + e.message); empty('ich-bilanzen', ''); });
+
+  // Aufstellung
+  pget('https://www.mytischtennis.de/api/ttr/team/players?teamId=' + TEAM_ID)
+    .then(data => {
+      const players = [...new Map((data?.data||[]).map(p => [p.internal_id, p])).values()];
+      if (!players.length) { empty('ich-aufstellung', 'Keine Daten'); return; }
+      $('ich-aufstellung').innerHTML = players.map((p,i) => {
+        const isMe = p.internal_id === MY_NUID;
+        return `<div class="prow">
+          <div class="pnum ${isMe?'me':''}">${i+1}</div>
+          <div class="pname ${isMe?'me':''}">${p.firstname} ${p.lastname}${isMe?' 🏓':''}<small>${p.internal_id}</small></div>
+        </div>`;
+      }).join('');
+    })
+    .catch(() => empty('ich-aufstellung', 'Fehler beim Laden'));
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
 startClock();
-loaded['home'] = true;
-loadAll();
+loaded.home = true;
+loadHome();
 </script>
 </body>
 </html>
