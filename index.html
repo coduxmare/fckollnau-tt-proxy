@@ -748,33 +748,44 @@ function renderBilanzen(balances) {
 //  VEREIN
 // ═══════════════════════════════════════════════════════════
 async function loadVereinsTeams() {
-  const res = await proxyAction('vereinsteams');
-  return { teams: res?.teams || [], club_name: res?.club_name || 'FC Kollnau' };
+  const res = await proxyAction('vereinsrang');
+  return res?.players || [];
 }
 
-function renderVereinsTeams({ teams, club_name }) {
-  if (!teams?.length) { err('club-teams-wrap','Keine Mannschaften'); return; }
-  document.getElementById('club-teams-wrap').innerHTML = `
-    <div style="margin-bottom:12px;padding:4px 0">
-      <div style="font-size:24px;font-weight:800;letter-spacing:-1px">${club_name || 'FC Kollnau'}</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:2px">Vereinsnr. 22036 · TTBW · Waldkirch</div>
+function renderVereinsTeams(players) {
+  const wrap = document.getElementById('club-teams-wrap');
+  if (!players?.length) { err('club-teams-wrap', 'Keine Spielerdaten'); return; }
+
+  const myNUID = 'NU177951';
+  const maxTTR = Math.max(...players.filter(p => p.q_ttr).map(p => p.q_ttr));
+
+  wrap.innerHTML = `
+    <div style="margin-bottom:14px">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-1px">FC Kollnau</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">Vereinsrangliste · TTBW · Saison 25/26 · ${players.length} Spieler</div>
     </div>
-    <div class="club-teams-grid">
-      ${teams.map(t => {
-        const me = String(t.team_id) === CFG.teamId || t.team_name?.includes('III');
-        return `<div class="club-team-card" style="${me?'border:1px solid rgba(29,185,84,.3)':''}">
-          <div class="club-team-rank" style="${me?'color:var(--accent)':''}">${t.table_rank!=null?'#'+t.table_rank:'—'}</div>
-          <div class="club-team-info">
-            <div class="club-team-name">${t.team_name||'?'}${me?' 🏓':''}</div>
-            <div class="club-team-liga">${t.league_name||'TTBW'} · ${t.team_organisation_short||''}</div>
-          </div>
-          <div class="club-team-pts">
-            <div class="club-team-pts-val">${t.points_won||0}:${t.points_lost||0}</div>
-            <div class="club-team-pts-lbl">Punkte</div>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
+    ${players.map((p, i) => {
+      const isMe = p.player_id === myNUID;
+      const name = (p.firstname + ' ' + p.lastname).trim() || p.player_id;
+      const ttr  = p.q_ttr ?? '–';
+      const barW = p.q_ttr ? Math.round(p.q_ttr / maxTTR * 100) : 0;
+      const total = p.wins + p.losses;
+      const quote = total > 0 ? Math.round(p.wins / total * 100) + '%' : '–';
+      return \`<div class="player-row" style="${isMe ? 'background:rgba(29,185,84,.06);border-radius:8px;margin:0 -4px;padding:10px 4px;' : ''}">\`
+        + \`<div class="player-rank-badge ${isMe ? 'me' : ''}">${i + 1}</div>\`
+        + \`<div style="flex:1;min-width:0">\`
+        + \`  <div class="player-name ${isMe ? 'me' : ''}" style="font-size:13px">${name}${isMe ? ' 🏓' : ''}</div>\`
+        + \`  <div style="font-size:10px;color:var(--text2);margin-top:2px">${p.team} · ${p.wins}S / ${p.losses}N · ${quote}</div>\`
+        + \`  <div style="margin-top:5px;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden">\`
+        + \`    <div style="width:${barW}%;height:100%;background:${isMe ? 'var(--accent)' : 'var(--text2)'};opacity:${isMe ? 1 : 0.5};transition:width .4s"></div>\`
+        + \`  </div>\`
+        + \`</div>\`
+        + \`<div style="text-align:right;min-width:44px">\`
+        + \`  <div style="font-size:18px;font-weight:800;color:${isMe ? 'var(--accent)' : 'var(--text)'}">${ttr}</div>\`
+        + \`  <div style="font-size:9px;color:var(--text2)">Q-TTR</div>\`
+        + \`</div>\`
+        + \`</div>\`;
+    }).join('')}`;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -833,7 +844,8 @@ async function loadTab(name) {
     else loadTable().then(renderFullTable).catch(() => err('full-table-wrap','Fehler'));
   }
   if (name === 'verein') {
-    loadVereinsTeams().then(renderVereinsTeams).catch(e => { console.error(e); err('club-teams-wrap','Fehler beim Laden'); });
+    document.getElementById('club-teams-wrap').innerHTML = '<div class="loading"><div class="spinner"></div><p>Lade Vereinsrangliste… (kann 10–15s dauern)</p></div>';
+    loadVereinsTeams().then(renderVereinsTeams).catch(e => { console.error(e); err('club-teams-wrap','Fehler beim Laden: ' + e.message); });
   }
   if (name === 'spiele') {
     if (meetings?.length) renderSchedule(meetings);
